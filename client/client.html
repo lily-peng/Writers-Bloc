@@ -1,19 +1,24 @@
 <head>
-  <title>Chat app</title>
+  <title>Writer's Bloc</title>
 </head>
 
 <body>
   {{loginButtons align="right"}}<br>
-  <h1>Chatapp</h1>
+  <h1>Writer's Bloc</h1>
   {{> welcome }}
-  {{> input }}
+  {{> lobby }}
   {{> messages }}
+  {{> input }}
 </body>
 
 <template name="welcome">
   <p>
-    Welcome to the example chat app! Please log in to show your username.
+    Welcome to Writer's Bloc! Please log in.
   </p>
+</template>
+
+<template name="lobby">
+  <p><input type="button" value="Join a Room" /></p>
 </template>
 
 <template name="input">

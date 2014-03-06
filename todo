@@ -1,7 +1,8 @@
 To Do:
 
 //1. Allow people to log in
-2. Form a Lobby system
+//2. Make a chatroom
+3. Form a Lobby system
   - Allow people to be Guests
-3. Implement a Chatroom
+  - Put in a scrollbar
 4. Start implementing the game!
