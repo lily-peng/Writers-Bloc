@@ -1,0 +1,31 @@
+<head>
+  <title>Writer's Bloc</title>
+</head>
+
+<body>
+  {{loginButtons align="right"}}<br>
+  <h1>Writer's Bloc</h1>
+  {{> story }}
+  {{> stage1 }}
+  {{> stage2 }}
+</body>
+
+<template name="story">
+  {{#each sentences}}
+    {{sentence}}
+  {{/each}}
+</template>
+
+<template name="stage1">
+  <p>Enter your sentence here:</p>
+  <input type="text" id="sentence"> 
+  <input type="button" id="stage1Submit" value="Submit">
+</template>
+
+<template name="stage2">
+  <p>Vote on one of the following:</p>
+  {{#each sentences}}
+    <input type="radio" name="vote" value={{playerId}}>{{sentence}}</input>
+  {{/each}}
+  <input type="button" id="stage2Submit" value="Submit">
+</template>
