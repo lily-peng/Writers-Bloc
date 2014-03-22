@@ -19,6 +19,7 @@ Template.lobbybutton.events = {
       inLobby = true;
       $('#input').html(Meteor.render(Template.input));
       $('#messages').html(Meteor.render(Template.messages));
+      $('#messages').html(Meteor.render(Template.lobby));
       //window.location.href = "lobby.html";
       //console.log("You pressed the button");
       console.log("inLobby: " + inLobby);
