@@ -6,9 +6,16 @@
   {{loginButtons align="right"}}<br>
   <h1>Writer's Bloc</h1>
   {{> welcome }}
-  {{> lobby }}
-  {{> messages }}
-  {{> input }}
+  {{> lobbybutton }}
+  <div id="messages">
+    {{> messages }}
+  </div>
+  <div id="input">
+    {{> input }}
+  </div>
+  <div id="lobby">
+    {{> lobby }}
+  </div>
 </body>
 
 <template name="welcome">
@@ -17,18 +24,30 @@
   </p>
 </template>
 
-<template name="lobby">
-  <p><input type="button" value="Join a Room" /></p>
+<template name="lobbybutton">
+  <p><input id="btn" type="button" value="Join a Room" 
+       onclick="return click()" />
+  </p>
 </template>
 
 <template name="input">
+  {{#if show}}
   <p>Message: <input type="text" id="message"></p>
+  {{/if}}
 </template>
 
 <template name="messages">
+  {{#if show}}
   {{#each messages}}
     <strong>{{name}}:</strong> {{message}}<br>
   {{/each}}
+  {{/if}}
 </template>
 
-
+<template name="lobby">
+  {{#if show}}
+  <p><input id="btnTest" type="button" value="lalala" 
+       onclick="return" />
+  </p>
+  {{/if}}
+</template>

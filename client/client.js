@@ -1,19 +1,27 @@
 /**
 * Templates
 */
+
+var inLobby = false;
+
 Template.messages.messages = function () {
   return Messages.find({}, { sort: { time: +1 }});
   
   //return messages.find({room:Session.get("room")}) //get the room name set in the router
 }
 
-Template.lobby.events = {
-  'click input' : function () {
+Template.lobbybutton.events = {
+  'click' : function () {
     // template data, if any, is available in 'this'
     if (typeof console !== 'undefined')
       //here is what happens if you click the button
-      
-      console.log("You pressed the button");
+      console.log("inLobby: " + inLobby);
+      inLobby = true;
+      $('#input').html(Meteor.render(Template.input));
+      $('#messages').html(Meteor.render(Template.messages));
+      //window.location.href = "lobby.html";
+      //console.log("You pressed the button");
+      console.log("inLobby: " + inLobby);
     }
 }
 
@@ -40,6 +48,21 @@ Template.input.events = {
     }
   }
 }
+
+Template.input.show = function () {
+  // show main chat if button not clicked
+  return !(inLobby);
+};
+
+Template.messages.show = function () {
+  // show main chat if button not clicked
+  return !(inLobby);
+};
+
+Template.lobby.show = function () {
+  // show lobby if lobbybutton is clicked, triggering inLobby
+  return inLobby;
+};
 
 /*Meteor.Router.add({
   '/': 'home',
