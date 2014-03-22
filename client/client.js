@@ -3,6 +3,7 @@
 */
 
 var inLobby = false;
+Meteor.subscribe("players");
 
 Template.messages.messages = function () {
   return Messages.find({}, { sort: { time: +1 }});
@@ -12,7 +13,6 @@ Template.messages.messages = function () {
 
 Template.lobbybutton.events = {
   'click' : function () {
-    // template data, if any, is available in 'this'
     if (typeof console !== 'undefined')
       //here is what happens if you click the button
       console.log("inLobby: " + inLobby);
@@ -20,9 +20,9 @@ Template.lobbybutton.events = {
       $('#input').html(Meteor.render(Template.input));
       $('#messages').html(Meteor.render(Template.messages));
       $('#messages').html(Meteor.render(Template.lobby));
-      //window.location.href = "lobby.html";
-      //console.log("You pressed the button");
       console.log("inLobby: " + inLobby);
+      
+      lobbystart();
     }
 }
 
@@ -50,6 +50,11 @@ Template.input.events = {
   }
 }
 
+Template.lobbybutton.show = function () {
+  // show main chat if button not clicked
+  return !(inLobby);
+};
+
 Template.input.show = function () {
   // show main chat if button not clicked
   return !(inLobby);
@@ -64,6 +69,50 @@ Template.lobby.show = function () {
   // show lobby if lobbybutton is clicked, triggering inLobby
   return inLobby;
 };
+
+Template.lobby.events = {
+  'lobbystart' : function () {
+    console.log("here");
+    if (! Meteor.userId()) { // must be logged in to join lobbies
+      console.log("not logged in");
+      return;
+    }
+    var name = $('Meteor.userId()').val().trim();
+    console.log("Name: " + displayName(name));
+  }
+
+}
+
+function lobbystart () {
+  console.log("here");
+  if (! Meteor.user()) { // must be logged in to join lobbies
+    console.log("not logged in");
+    return;
+  }
+  //var name = $('Meteor.userId()').val().trim();
+  var name = Meteor.user().profile.name;
+  console.log("Name: " + name);
+}
+
+Template.lobby.name = function () {
+    return Meteor.user().profile.name;
+}
+
+/*Template.lobby.waiting = function () {
+  var players = Players.find({_id: {$ne: Session.get('player_id')},
+                              name: {$ne: ''},
+                              game_id: {$exists: false}});
+
+  return players;
+};
+
+Template.lobby.count = function () {
+  var players = Players.find({_id: {$ne: Session.get('player_id')},
+                              name: {$ne: ''},
+                              game_id: {$exists: false}});
+
+  return players.count();
+};*/
 
 /*Meteor.Router.add({
   '/': 'home',

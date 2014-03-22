@@ -6,7 +6,9 @@
   {{loginButtons align="right"}}<br>
   <h1>Writer's Bloc</h1>
   {{> welcome }}
-  {{> lobbybutton }}
+  <div id="lobbybutton">
+    {{> lobbybutton }}
+  </div>
   <div id="messages">
     {{> messages }}
   </div>
@@ -25,9 +27,10 @@
 </template>
 
 <template name="lobbybutton">
-  <p><input id="btn" type="button" value="Join a Room" 
-       onclick="return click()" />
-  </p>
+  {{#if show}}
+    <p><input id="btn" type="button" value="Join a Room" />
+    </p>
+  {{/if}}
 </template>
 
 <template name="input">
@@ -49,6 +52,13 @@
   {{#if show}}
   <p>
     Lobby implementation here!
+    Your username: {{name}} <!--INVESTIGATE WHY THIS DOESN'T WORK-->
+    {{#if count}}
+      <h1>{{count}} other players are in the lobby:</h1>
+      {{#each waiting }}
+      <div class="player">{{name}}</div>
+      {{/each}}
+    {{/if}}
   </p>
   {{/if}}
 </template>
