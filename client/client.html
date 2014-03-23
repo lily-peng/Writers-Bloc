@@ -10,11 +10,13 @@
     {{> lobbybutton }}
   </div>
   <div id="messages">
-  <!-- Or have height: 400px; -->
     {{> messages }}
   </div>
   <div id="input">
     {{> input }}
+  </div>
+  <div id="back">
+    {{> back }}
   </div>
   <div id="lobby">
     {{> lobby }}
@@ -41,13 +43,22 @@
 </template>
 
 <template name="messages">
-  <div id = "msg" class="msg" style="width: 100%;height: 60vh;overflow: scroll;";>
     {{#if show}}
+      <div id = "msg" class="msg" style="width: 100%;height: 60vh;overflow: scroll;";>
+      <!-- Or have height: 400px; -->
       {{#each messages}}
         <strong>{{name}}:</strong> {{message}}<br>
       {{/each}}
     {{/if}}
   </div>
+</template>
+
+<template name="back">
+  {{#if show}}
+  <p>
+    <input id="back" type="button" value="Back to Main Chat"/>
+  </p>
+  {{/if}}
 </template>
 
 <template name="lobby">

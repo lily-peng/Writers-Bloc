@@ -19,7 +19,9 @@ Template.lobbybutton.events = {
       inLobby = true;
       $('#input').html(Meteor.render(Template.input));
       $('#messages').html(Meteor.render(Template.messages));
-      $('#messages').html(Meteor.render(Template.lobby));
+      $('#lobby').html(Meteor.render(Template.lobby));
+      $('#lobbybutton').html(Meteor.render(Template.lobbybutton));
+      $('#back').html(Meteor.render(Template.back));
       console.log("inLobby: " + inLobby);
       
       lobbystart();
@@ -65,12 +67,17 @@ Template.messages.show = function () {
   return !(inLobby);
 };
 
+Template.back.show = function () {
+  // show main chat if button not clicked
+  return inLobby;
+};
+
 Template.lobby.show = function () {
   // show lobby if lobbybutton is clicked, triggering inLobby
   return inLobby;
 };
 
-Template.lobby.events = {
+/*Template.lobby.events = {
   'lobbystart' : function () {
     console.log("here");
     if (! Meteor.userId()) { // must be logged in to join lobbies
@@ -81,6 +88,22 @@ Template.lobby.events = {
     console.log("Name: " + displayName(name));
   }
 
+}*/
+
+Template.back.events = {
+  'backButton' : function () {
+    if (typeof console !== 'undefined') {
+      //here is what happens if you click the button
+      //go back to main chat
+      console.log("clicked back button");
+      inLobby = false;
+      $('#input').html(Meteor.render(Template.input));
+      $('#messages').html(Meteor.render(Template.messages));
+      $('#lobby').html(Meteor.render(Template.lobby));
+      $('#lobbybutton').html(Meteor.render(Template.lobbybutton));
+      $('#back').html(Meteor.render(Template.back));
+    }
+  }
 }
 
 function lobbystart () {
