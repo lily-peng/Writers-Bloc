@@ -69,17 +69,6 @@ lasts = new Array('The end. Or is it?',
                                     'I suppose everything worked out in the end.',
                                     'It was all a dream.');
 
-Games = new Meteor.Collection("games");
-Players = new Meteor.Collection("players");
-FirstSentences = new Meteor.Collection("firstSentences");
-for (var i = 0; i < firsts.length; i++) {
-    FirstSentences.insert(firsts[i]);
-}
-LastSentences = new Meteor.Collection("lastSentences");
-for (var i = 0; i < lasts.length; i++) {
-    LastSentences.insert(lasts[i]);
-}
-PlayerSentences = new Meteor.Collection("playerSentences");
 
 //CLIENT------------------------------------------------------------------------------------------
 
@@ -99,8 +88,13 @@ if (Meteor.isClient) {
   Meteor.startup(function () {  
     // code to run on server at startup
     // prompt for name
+    Games = new Meteor.Collection("games");
+    Players = new Meteor.Collection("players");
+    FirstSentences = new Meteor.Collection("firstSentences");
+    LastSentences = new Meteor.Collection("lastSentences");
+    PlayerSentences = new Meteor.Collection("playerSentences");
+    
     var playerName = prompt("Please enter your name:", "");
-    var playerID;
     Meteor.call('createPlayer', playerName, function(error, result) {
       console.log("PLAYER_ID: " + result);
       Session.set("myPlayerID", result);
@@ -216,12 +210,12 @@ if (Meteor.isClient) {
     'click #creategamenow': function(event) {
       var numberPlayers = document.getElementById("numberPlayers").value;
       var storyName = document.getElementById("storyName").value;
-      var playerID = Session.get("myPlayerID");
-      var myGameID;
+      var playerID = Session.get("myPlayerID");      
       Meteor.call("createGame", myGameID, storyName, parseInt(numberPlayers), function(error, result) {
         console.log("GAME_ID: " + result);
-        myGameID = result;
+        Session.set("myGameID", result);
       });
+      var myGameID = Session.get("myGameID");
       var firstSentence = document.getElementById("firstSentence").value;
       var lastSentence = document.getElementById("lastSentence").value;     
       if (firstSentence != ""){
@@ -238,7 +232,6 @@ if (Meteor.isClient) {
       }
       
       Meteor.call("setGameID", playerID, myGameID);
-      Session.set("myGameID", myGameID);
       console.log("SESSION_GAME_ID: " + Session.get("myGameID"));
       Session.set("gameState", SHOW_WAIT_FOR_GAME);
     }
@@ -326,7 +319,17 @@ if (Meteor.isClient) {
 if (Meteor.isServer) {
 
   Meteor.startup(function () {
-    // code to run on server at startup
+    Games = new Meteor.Collection("games");
+    Players = new Meteor.Collection("players");
+    FirstSentences = new Meteor.Collection("firstSentences");
+    for (var i = 0; i < firsts.length; i++) {
+ 		  FirstSentences.insert(firsts[i]);
+    }
+    LastSentences = new Meteor.Collection("lastSentences");
+    for (var i = 0; i < lasts.length; i++) {
+      LastSentences.insert(lasts[i]);
+    }
+    PlayerSentences = new Meteor.Collection("playerSentences");
   });
 
   Meteor.methods({
