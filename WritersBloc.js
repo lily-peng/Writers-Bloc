@@ -102,10 +102,9 @@ if (Meteor.isClient) {
     var playerName = prompt("Please enter your name:", "");
     var playerID;
     Meteor.call('createPlayer', playerName, function(error, result) {
-      console.log("PLAYER_ID: " + result);
+      //console.log("PLAYER_ID: " + result);
       Session.set("myPlayerID", result);
     });    
-    console.log("SESSION_PLAYER_ID: " + Session.get("myPlayerID"));
     Session.set("gameState", SHOW_LOBBY);
   });
  
@@ -219,10 +218,9 @@ if (Meteor.isClient) {
       var playerID = Session.get("myPlayerID");
       var myGameID;
       Meteor.call("createGame", myGameID, storyName, parseInt(numberPlayers), function(error, result) {
-        console.log("GAME_ID: " + result);
+        //console.log("GAME_ID: " + result);
         myGameID = result;
       });
-      alert("id: " + myGameID);
       var firstSentence = document.getElementById("firstSentence").value;
       var lastSentence = document.getElementById("lastSentence").value;     
       if (firstSentence != ""){
