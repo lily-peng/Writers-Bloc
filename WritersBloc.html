@@ -3,14 +3,16 @@
 </head>
 
 <body>
-    <h1>Writer's Bloc (the best game on the internet)</h1>
-    {{> goBack}}
+  <h1>Writer's Bloc (the best game on the internet)</h1>
+  {{> goBack}}
 	{{> lobby}}
 	{{> createGame}}
 	{{> joinGame}}
 	{{> waitForGame}}
 	{{> rules}}
 	{{> startGame}}	
+  {{> stageOne}}
+  {{> stageTwo}}
 </body>
 
 <template name="goBack">
@@ -31,16 +33,23 @@
 <template name="createGame">
 	{{#if showCreateGame}}
 		<h3>Create a game:</h3>
-		<p>Enter number of players (2-10):</p>
-		<input type="text" id="numberPlayers">    
-		<br>
 		<p>Enter your story name:</p>
 		<input type="text" id="storyName">
 		<br>
+		
+    <p>Enter number of players (2-10):</p>
+		<input type="text" id="numberPlayers">    
+		<br>
+    
+    <p>Enter number of rounds ():</p>
+    <input type="text" id="numberRounds">
+    <br>
+
 		<p>Enter the first sentence:*</p>
 		<input type="text" id="firstSentence">
 		<br>
-		<p>Enter the last sentence:*</p>
+		
+    <p>Enter the last sentence:*</p>
 		<input type="text" id="lastSentence">
 		<br>
 		*optional (leave blank for a random sentence)
@@ -58,18 +67,20 @@
 </template>
 
 <template name="waitForGame">
-{{#if showWaitForGame}}
-
-	{{#each game}}
-		<h1><p>{{Title}}</p></h1>
-	{{/each}}
-
-	<h3>Players Joined:</h3>
-		{{#each players}}
-			<h4><p>{{Name}}</p></h4>
+  {{#if showWaitForGame}}
+	  {{#with game}}
+  		<h2>{{Title}}</h2>
+  	{{/with}}
+	  <h3>Players Joined:</h3>
+	  {{#each players}}
+	   	<p>{{Name}}</p>
 		{{/each}}
-
-{{/if}}
+    {{#if isHost}}
+      <p><input type="button" id="start" value="Start Game"/></p> 
+    {{else}}
+      <p><input type="button" value="Start Game" disabled/></p>
+    {{/if}}
+  {{/if}}
 </template>
 
 <template name="rules">
@@ -102,13 +113,37 @@
 		      <p><input type="button" id = "submitSentence" value = "Submit"></p>
 		    {{/if}}
 		    {{#if showSubmitted}}
-		      Waiting for other players to submit...
-		      
+		      Waiting for other players to submit...		      
 		    {{/if}}
 		    
         
     {{/if}}
 </template>
+
+<template name="stageOne">
+  {{#if showStageOne}}
+    {{#with game}}
+      <h3>{{Title}}</h3>
+      <p>Round {{CurrentRound}}/{{Rounds}}</p>
+      <p>{{FirstSentence}}</p>
+      <p>{{LastSentence}}</p>
+    {{/with}}
+    {{#if canPlay}}
+      <p>Submit a sentence!<input type="text" id="sentence" /></p>
+      <p><input type="button" id="submit" value="Submit" /></p> 
+    {{else}}
+      <p>Submitted!</p>
+      <p>Waiting for other players...</p> 
+    {{/if}}
+  {{/if}}
+</template>
+
+<template name="stageTwo">
+	{{#if showStageTwo}}
+    HI!
+  {{/if}}
+</template>
+
 <template name ="sentences">
   HEREHERHEHREHREHE
   {{#each sentence}}

@@ -70,6 +70,19 @@ lasts = new Array('The end. Or is it?',
                                     'It was all a dream.');
 
 
+Games = new Meteor.Collection("games");
+Players = new Meteor.Collection("players");
+FirstSentences = new Meteor.Collection("firstSentences");
+for (var i = 0; i < firsts.length; i++) {
+  FirstSentences.insert(firsts[i]);
+}
+LastSentences = new Meteor.Collection("lastSentences");
+for (var i = 0; i < lasts.length; i++) {
+  LastSentences.insert(lasts[i]);
+}
+PlayerSentences = new Meteor.Collection("playerSentences");
+
+
 //CLIENT------------------------------------------------------------------------------------------
 
 if (Meteor.isClient) {
@@ -86,40 +99,41 @@ if (Meteor.isClient) {
   SHOW_STAGE_TWO = 8;
   SHOW_STAGE_THREE = 9;
 
-  Meteor.startup(function () {  
-    /* Create the collections */
-    Games = new Meteor.Collection("games");
-    Players = new Meteor.Collection("players");
-    FirstSentences = new Meteor.Collection("firstSentences");
-    LastSentences = new Meteor.Collection("lastSentences");
-    PlayerSentences = new Meteor.Collection("playerSentences");
-  
+  Meteor.startup(function () {   
     /* Subscribe to static collections */
     Meteor.subscribe("firstSentences");
     Meteor.subscribe("lastSentences");
 
-    /* Set initial Session variables */
-    Session.set("gameState", SHOW_LOBBY);
-    Session.set("myGameID", null);
-    Session.set("notSubmitted", true);
-    Session.set("showSubmitted", false);
-    Session.set("roundNum", 0);  
-  
+    Session.set("playerID", null);
+
     /* Create the player */
     var playerName = prompt("Please enter your name:", "");
-    Meteor.call('createPlayer', playerName, function(error, result) {
-      console.log("PLAYER_ID: " + result);
-      Session.set("myPlayerID", result);
-      console.log("SESSION_PLAYER_ID_1: " + Session.get("myPlayerID"));
-    });    
-    console.log("SESSION_PLAYER_ID_2: " + Session.get("myPlayerID"));
+    Meteor.call("createPlayer", playerName, function(error, result) {
+      Session.set("playerID", result);
+    });
+
+    /* Set initial Session variables */
+    Session.set("gameState", SHOW_LOBBY);
+    Session.set("gameID", null);
+    Session.set("notSubmitted", true);
+    Session.set("showSubmitted", false);
+    Session.set("roundNum", 0);   
   });
  
   Deps.autorun(function () {
     /* Reactive variables */
-    var gameID = Session.get("myGameID");
-    var playerID = Session.get("myPlayerID");
-    var gameState = Session.get("gameState");
+    var gameID = Session.get("gameID");
+    var playerID = Session.get("playerID");
+    var gameState = null;
+
+    /* pull gameState from server */
+    if (playerID != undefined) {
+			var gameStateCursor = Players.findOne(playerID, {fields: {GameState: 1}});
+		  var gameState = gameStateCursor.GameState;
+			if (gameState != undefined) {
+				Session.set("gameState", gameState);
+			}
+    }
 
     /* subscribe to Games */
     Meteor.subscribe("games", gameState, gameID);
@@ -130,7 +144,13 @@ if (Meteor.isClient) {
     /* join a game I created */
     if (gameState == SHOW_CREATE_GAME && gameID != null) {
       Meteor.call("setGameID", playerID, gameID);
-      Session.set("gameState", SHOW_WAIT_FOR_GAME);
+      Meteor.call("setIsHost", playerID, true);
+      Meteor.call("setPlayerGameState", playerID, SHOW_WAIT_FOR_GAME);
+    }
+
+    /* leave a game I am not in */
+    else if (gameState == 0 && gameID != null) {
+      Session.set("gameID", null);
     }
   });
 
@@ -162,6 +182,14 @@ if (Meteor.isClient) {
     return Session.get("showSubmitted");
   }
 
+  Template.stageOne.showStageOne = function() {
+    return Session.get("gameState") == SHOW_STAGE_ONE;
+  }
+
+  Template.stageTwo.showStageTwo = function() {
+    return Session.get("gameState") == SHOW_STAGE_TWO;
+  }
+
   Template.waitForGame.showWaitForGame = function() {
     return Session.get("gameState") == SHOW_WAIT_FOR_GAME;
   }
@@ -171,19 +199,48 @@ if (Meteor.isClient) {
   Template.joinGame.helpers({
     availableGames: function() {
       var games = Games.find({});
-      return games;
+      if (games)
+	      return games;
+      return "";
     }
   });
 
   Template.waitForGame.helpers({    
     game: function() {
-      var game = Games.find({});
-      return game;
+      var game = Games.findOne({});
+      if (game)
+	      return game;
+      return "";
     },
 
     players: function() {
       var players = Players.find({});
-      return players;
+      if (players)
+	      return players;
+      return "";
+    },
+
+    isHost: function() {
+      var playerID = Session.get("playerID");
+      var player = Players.findOne(playerID, {fields: {Host: 1}});
+      var isHost = player.Host;
+      return isHost;
+    }
+  });
+
+  Template.stageOne.helpers({
+    game: function() {
+      var game = Games.findOne({});
+      if (game)
+        return game;
+      return "";
+    },
+
+    canPlay: function() {
+      var playerID = Session.get("playerID");
+      var player = Players.findOne(playerID, {fields: {CanPlay: 1}});
+      var canPlay = player.CanPlay;
+      return canPlay;
     }
   });
 
@@ -203,21 +260,25 @@ if (Meteor.isClient) {
   
   Template.goBack.events({
     'click #lobby' : function(event) {
-      Session.set("gameState", SHOW_LOBBY);
+      var playerID = Session.get("playerID");
+      Meteor.call("setPlayerGameState", playerID, SHOW_LOBBY);
     }
   });
 
   Template.lobby.events({
     'click #creategame': function (event) {
-      Session.set("gameState", SHOW_CREATE_GAME);
+      var playerID = Session.get("playerID");
+      Meteor.call("setPlayerGameState", playerID, SHOW_CREATE_GAME);
     },
 
     'click #joingame': function (event) {
-      Session.set("gameState", SHOW_JOIN_GAME);
+      var playerID = Session.get("playerID");
+      Meteor.call("setPlayerGameState", playerID, SHOW_JOIN_GAME);
     },
 
     'click #settings': function (event) {
-      Session.set("gameState", SHOW_SETTINGS);
+      var playerID = Session.get("playerID");
+      Meteor.call("setPlayerGameState", playerID, SHOW_SETTINGS);
     }
   });
 
@@ -225,20 +286,21 @@ if (Meteor.isClient) {
     'click #creategamenow': function(event) {
       var numberPlayers = document.getElementById("numberPlayers").value;
       var storyName = document.getElementById("storyName").value;
-      var playerID = Session.get("myPlayerID");      
+      var numberRounds = document.getElementById("numberRounds").value;
+      var playerID = Session.get("playerID");      
 
       var firstSentence = document.getElementById("firstSentence").value;
       if (firstSentence == "") {
         firstSentence = firsts[Math.floor((Math.random()*firsts.length)+1)];
-      } 
+      }
 
       var lastSentence = document.getElementById("lastSentence").value;       
       if (lastSentence == "") {
         lastSentence = lasts[Math.floor((Math.random()*lasts.length)+1)];
       } 
 
-      Meteor.call("createGame", storyName, parseInt(numberPlayers), function(error, result) {
-        Session.set("myGameID", result);
+      Meteor.call("createGame", storyName, parseInt(numberPlayers), parseInt(numberRounds), firstSentence, lastSentence, function(error, result) {
+        Session.set("gameID", result);
       });    
     }
   });
@@ -247,14 +309,32 @@ if (Meteor.isClient) {
     'click #join': function(event) {
       var clicked = event.target;
       var gameID = clicked.name;
-      var playerID = Session.get("myPlayerID");
+      var playerID = Session.get("playerID");
 		  Meteor.call("incrementNumberPlayers", gameID);
       Meteor.call("setGameID", playerID, gameID);
-      Session.set("myGameID", gameID);
-      Session.set("gameState", SHOW_WAIT_FOR_GAME);
+      Session.set("gameID", gameID);
+      Meteor.call("setPlayerGameState", playerID, SHOW_WAIT_FOR_GAME);
     }
   });
-  
+
+  Template.waitForGame.events({
+    'click #start': function(event) {
+      var gameID = Session.get("gameID");
+      Meteor.call("incrementRound", gameID);
+      Meteor.call("setGroupGameState", gameID, SHOW_STAGE_ONE);
+    }
+  });
+
+  Template.stageOne.events({
+    'click #submit': function(event) {
+      var gameID = Session.get("gameID");
+      var currentRound = Games.findOne({}).CurrentRound;
+      var playerID = Session.get("playerID");
+      var text = document.getElementById("sentence").value;
+      Meteor.call("submitSentence", gameID, playerID, currentRound, text);
+    }
+  });
+  /*
   var sec = 10;
   
   Template.rules.events({
@@ -276,10 +356,10 @@ if (Meteor.isClient) {
                       Session.set("notSubmitted", false);
                       Session.set("showSubmitted", true);
                       var sentence = document.getElementById("sentence").value; //should just submit whatever's in text box, but doesnt work.
-                      var myGameID = Session.get("myGameID");
-                      var myPlayerID = Session.get("myPlayerID");
-                      Meteor.call("setRound", myGameID, roundNum);
-                      Meteor.call('addPlayerSentence', myGameID, myPlayerID, sentence, 0);
+                      var gameID = Session.get("gameID");
+                      var playerID = Session.get("playerID");
+                      Meteor.call("setRound", gameID, roundNum);
+                      Meteor.call('addPlayerSentence', gameID, playerID, sentence, 0);
                   }
               }
           }, 1000));
@@ -299,25 +379,23 @@ if (Meteor.isClient) {
           Session.set("notSubmitted", false);
           Session.set("showSubmitted", true);
           var sentence = document.getElementById("sentence").value;
-          //console.log("sentence: " + sentence);
-          var myGameID = Session.get("myGameID");
-          //console.log("myGameID: " + myGameID);
-          //console.log("mgid type: " + typeof(myGameID));
-          var myPlayerID = Session.get("myPlayerID");
-          //console.log("myPlayerID: " + myPlayerID);
-          //console.log("mpid type: " + typeof(myPlayerID));
-          //console.log("HEREEEEEEEEE: " + Meteor.call('addPlayerSentence', myPlayerID, sentence));
-          Meteor.call("setRound", myGameID, roundNum);
-          Meteor.call('addPlayerSentence', myGameID, myPlayerID, sentence, 0);
-          
-      }
-      
+          var gameID = Session.get("gameID");
+          //console.log("gameID: " + gameID);
+          //console.log("mgid type: " + typeof(gameID));
+          var playerID = Session.get("playerID");
+          //console.log("playerID: " + playerID);
+          //console.log("mpid type: " + typeof(playerID));
+          //console.log("HEREEEEEEEEE: " + Meteor.call('addPlayerSentence', playerID, sentence));
+          Meteor.call("setRound", gameID, roundNum);
+          Meteor.call('addPlayerSentence', gameID, playerID, sentence, 0);          
+      }      
   });
-  
+ 
   Template.sentences.sentence = function() {
     var sentences = PlayerSentences.find({}).fetch();
     return sentences;
   }
+   */
 }
 
 //SERVER------------------------------------------------------------------------------------------
@@ -325,28 +403,19 @@ if (Meteor.isClient) {
 if (Meteor.isServer) {
 
   Meteor.startup(function () {
-    Future = Npm.require('fibers/future');
-    Games = new Meteor.Collection("games");
-    Players = new Meteor.Collection("players");
-    FirstSentences = new Meteor.Collection("firstSentences");
-    for (var i = 0; i < firsts.length; i++) {
- 		  FirstSentences.insert(firsts[i]);
-    }
-    LastSentences = new Meteor.Collection("lastSentences");
-    for (var i = 0; i < lasts.length; i++) {
-      LastSentences.insert(lasts[i]);
-    }
-    PlayerSentences = new Meteor.Collection("playerSentences");
+
   });
 
   Meteor.methods({
     
-    createGame: function(storyName, numberPlayers, firstSentence, lastSentence) {
+    createGame: function(storyName, numberPlayers, rounds, firstSentence, lastSentence) {
+      Meteor._debug("Creating game");
       var id = Games.insert({
         Title: storyName, 
         PlayerCount: 1, 
         PlayersPerGame: numberPlayers, 
-        Round: 0, 
+        CurrentRound: 0, 
+        Rounds: rounds,
         FirstSentence: firstSentence, 
         LastSentence: lastSentence,
         Sentences: []
@@ -355,28 +424,116 @@ if (Meteor.isServer) {
     },
 
     createPlayer: function(playerName) {
+      Meteor._debug("Creating player");
       var id = Players.insert({
         Name: playerName, 
         Score: 0, 
-        GameID: null
+        GameState: 0,
+        GameID: null,
+        Host: false,
+        CanPlay: false
       });
       return id;
     },
+
+    setIsHost: function(playerID, isHost) {
+      Meteor._debug("Designating host");
+      Players.update(playerID, {$set: {Host: isHost}});
+    },
     
     setGameID: function(playerID, gameID) {
+      Meteor._debug("Setting gameID");
       Players.update(playerID, {$set: {GameID: gameID}});
     },
     
     incrementNumberPlayers: function(gameID) {
+      Meteor._debug("Incrementing players");
 	    Games.update(gameID, {$inc: {PlayerCount: 1}});
     },
-    
-    setRound: function(gameID, roundNum) {
-      Games.update(gameID, {$set: {Round: roundNum}});
+
+    setPlayerGameState: function(playerID, gameState) {
+      Meteor._debug("Setting game state");
+      Players.update(
+				playerID, {
+					$set: {GameState: gameState}
+				}
+			);
+    },
+ 
+    setGroupGameState: function(gameID, gameState) {
+      Meteor._debug("Setting group game state");
+      /* Get the number of players in game */
+      var numPlayers = Players.find({GameID: gameID}).fetch().length;
+
+      /* Set all players to gameState */
+      for (var i=0; i<numPlayers; i++) {
+		    Players.update({
+				  GameID: gameID,
+          GameState: {$ne: gameState}
+				}, {
+					$set: {
+						GameState: gameState, 
+						CanPlay: true
+					}
+				});
+      }
     },
     
-    addPlayerSentence: function(gameID, playerID, text, votes) {
-      PlayerSentences.insert({GameID: gameID, PlayerID: playerID, Text: text, Votes: votes});
+    incrementRound: function(gameID) {
+	    Games.update(gameID, {$inc: {CurrentRound: 1}});
+    },
+
+    setRound: function(gameID, roundNum) {
+      Games.update(
+				gameID, {
+					$set: {Round: roundNum}
+				}
+			);
+    },
+    
+    submitSentence: function(gameID, playerID, roundNumber, text) {
+      /* Get the number of players in game */
+      var numPlayers = Players.find({GameID: gameID}).fetch().length;
+			console.log("Players.find({GameID: " + gameID + "}) returns " + numPlayers);
+
+      /* Add the sentence to the collection */
+      PlayerSentences.insert({
+				GameID: gameID, 
+				PlayerID: playerID, 
+        RoundNumber: roundNumber,
+				Text: text, 
+				Votes: 0
+			});
+
+      /* Disable the player until the next stage */
+      Players.update(
+				playerID, {
+					$set: {
+			      CanPlay: false
+					}  	
+	   	  }
+			);
+
+      /* Get the number of sentences from this round */
+      var numSentences = PlayerSentences.find({
+				GameID: gameID, 
+				RoundNumber: roundNumber
+			}).fetch().length;
+      console.log("PlayerSentences.find({GameID: " + gameID + ", RoundNumber: " + roundNumber + "}) returns " + numSentences);
+
+      /* Enable all players and move onto voting stage if ready */
+      console.log("Checking numbers...");
+      if (numSentences == numPlayers) {
+        console.log("All sentences received! Updating players...");
+		    /* Set all players to gameState */
+		    for (var i=0; i<numPlayers; i++) {
+			    console.log("Updating player " + i);
+				  Players.update(
+						{GameID: gameID, GameState: {$ne: 8}}, 
+						{$set: {GameState: 8, CanPlay: true}}
+					);
+		    }
+      }
     }   
   });
 
@@ -392,7 +549,9 @@ if (Meteor.isServer) {
     return Players.find({GameID: gameID});
   });
   
-  Meteor.publish("playerSentences", function() {
-    return PlayerSentences.find({});
+  Meteor.publish("playerSentences", function(gameID, gameState, roundNumber) {
+    if (gameState == 8)
+      return PlayerSentences.find({GameID: gameID, RoundNumber: roundNumber});
+    return null;
   });
 }
