@@ -98,13 +98,14 @@ if (Meteor.isClient) {
   SHOW_STAGE_ONE = 7;
   SHOW_STAGE_TWO = 8;
   SHOW_STAGE_THREE = 9;
+  SHOW_RESULTS = 10;
 
   Meteor.startup(function () {   
     /* Subscribe to static collections */
     Meteor.subscribe("firstSentences");
     Meteor.subscribe("lastSentences");
 
-    Session.set("playerID", null);
+    //Session.set("playerID", null);
 
     /* Create the player */
     var playerName = prompt("Please enter your name:", "");
@@ -125,14 +126,26 @@ if (Meteor.isClient) {
     var gameID = Session.get("gameID");
     var playerID = Session.get("playerID");
     var gameState = null;
-
-    /* pull gameState from server */
+    var currentRound = null;
+    
     if (playerID != undefined) {
-			var gameStateCursor = Players.findOne(playerID, {fields: {GameState: 1}});
-		  var gameState = gameStateCursor.GameState;
-			if (gameState != undefined) {
+      /* pull gameState from Players collection */
+      try {
+  			var gameStateCursor = Players.findOne(playerID, {fields: {GameState: 1}});
+				gameState = gameStateCursor.GameState;
 				Session.set("gameState", gameState);
-			}
+			} catch (err) {
+        //console.log("No gameState!");
+      }
+
+		  /* pull currentRound from Games collection */
+      try {
+        var currentRoundCursor = Games.findOne(gameID, {fields: {CurrentRound: 1}});
+      	currentRound = currentRoundCursor.CurrentRound;
+        Session.set("currentRound", currentRound);
+      } catch (err) {
+        //console.log("No currentRound!");
+      }
     }
 
     /* subscribe to Games */
@@ -140,6 +153,9 @@ if (Meteor.isClient) {
 
     /* subscribe to Players */
     Meteor.subscribe("players", gameID);
+
+    /* subscribe to Sentences */
+    Meteor.subscribe("playerSentences", gameID, gameState, currentRound);
 
     /* join a game I created */
     if (gameState == SHOW_CREATE_GAME && gameID != null) {
@@ -188,6 +204,14 @@ if (Meteor.isClient) {
 
   Template.stageTwo.showStageTwo = function() {
     return Session.get("gameState") == SHOW_STAGE_TWO;
+  }
+
+  Template.stageThree.showStageThree = function() {
+    return Session.get("gameState") == SHOW_STAGE_THREE;
+  }
+
+  Template.results.showResults = function() {
+    return Session.get("gameState") == SHOW_RESULTS;
   }
 
   Template.waitForGame.showWaitForGame = function() {
@@ -244,18 +268,38 @@ if (Meteor.isClient) {
     }
   });
 
-  Template.startGame.helpers({
-    firstSentence: function() {
-      var sent = Session.get("firstSentence");
-      return sent;
+  Template.stageTwo.helpers({
+    game: function() {
+      var game = Games.findOne({});
+      if (game)
+        return game;
+      return "";
     },
-    
-    lastSentence: function() {
-      var sent = Session.get("lastSentence");
-      return sent;
-    }
+
+    canPlay: function() {
+      var playerID = Session.get("playerID");
+      var player = Players.findOne(playerID, {fields: {CanPlay: 1}});
+      var canPlay = player.CanPlay;
+      return canPlay;
+    },
+
+    sentences: function() {
+      var sentences = PlayerSentences.find({});
+      return sentences;
+    }    
   });
-  
+
+  Template.round.helpers({
+    title: function() {
+      var currentRound = Session.get("currentRound");
+      var finalRound = Games.findOne({}).Rounds;
+      if (currentRound == finalRound) {
+        return "Last round, double points!";
+      } else {
+        return "Round " + currentRound + " of " + finalRound;
+      }
+    }
+  }); 
   /////////////////Template Events//////////////////////////////////
   
   Template.goBack.events({
@@ -328,74 +372,29 @@ if (Meteor.isClient) {
   Template.stageOne.events({
     'click #submit': function(event) {
       var gameID = Session.get("gameID");
-      var currentRound = Games.findOne({}).CurrentRound;
+      var currentRound = Session.get("currentRound");
       var playerID = Session.get("playerID");
       var text = document.getElementById("sentence").value;
-      Meteor.call("submitSentence", gameID, playerID, currentRound, text);
+      Meteor.call("stageOneSubmit", gameID, playerID, currentRound, text);
     }
   });
-  /*
-  var sec = 10;
-  
-  Template.rules.events({
-      'click #startgame' : function(event) {
-          
-          Session.set("timer", setInterval(function() {
-              if (sec > 0) {
-                  sec--;
-                  document.getElementById("timer").innerHTML = sec;
-              }
-              else { //here, put what happens when the timer runs out
-                  sec=0;
-                  document.getElementById("timer").innerHTML = 0;
-                  if (Session.get("showSubmitted") == false) { //times out and you haven't submitted
-                      var increment = Session.get("roundNum");
-                      increment++;
-                      Session.set("roundNum", increment);
-                      var roundNum = Session.get("roundNum");
-                      Session.set("notSubmitted", false);
-                      Session.set("showSubmitted", true);
-                      var sentence = document.getElementById("sentence").value; //should just submit whatever's in text box, but doesnt work.
-                      var gameID = Session.get("gameID");
-                      var playerID = Session.get("playerID");
-                      Meteor.call("setRound", gameID, roundNum);
-                      Meteor.call('addPlayerSentence', gameID, playerID, sentence, 0);
-                  }
-              }
-          }, 1000));
-          
-          Session.set("showRules", false);
-          Session.set("showStartGame", true);
-      }
+
+  Template.stageTwo.events({
+    'click #submit': function(event) {
+      var gameID = Session.get("gameID");
+      var playerID = Session.get("playerID");
+      var currentRound = Session.get("currentRound");
+			var sentenceID = null;
+      var radioButtons = document.getElementsByName('sentenceRadio');
+		  for (var i=0; i<radioButtons.length; i++) {
+		    var currentRadio = radioButtons[i];
+		    if (currentRadio.checked) {
+		      sentenceID = currentRadio.value;
+		    }
+		  }
+      Meteor.call("stageTwoSubmit", gameID, playerID, sentenceID, currentRound);    
+    }
   });
-  
-  Template.startGame.events({
-      'click #submitSentence' : function(event) {
-          var increment = Session.get("roundNum");
-          increment++;
-          Session.set("roundNum", increment);
-          var roundNum = Session.get("roundNum");
-          
-          Session.set("notSubmitted", false);
-          Session.set("showSubmitted", true);
-          var sentence = document.getElementById("sentence").value;
-          var gameID = Session.get("gameID");
-          //console.log("gameID: " + gameID);
-          //console.log("mgid type: " + typeof(gameID));
-          var playerID = Session.get("playerID");
-          //console.log("playerID: " + playerID);
-          //console.log("mpid type: " + typeof(playerID));
-          //console.log("HEREEEEEEEEE: " + Meteor.call('addPlayerSentence', playerID, sentence));
-          Meteor.call("setRound", gameID, roundNum);
-          Meteor.call('addPlayerSentence', gameID, playerID, sentence, 0);          
-      }      
-  });
- 
-  Template.sentences.sentence = function() {
-    var sentences = PlayerSentences.find({}).fetch();
-    return sentences;
-  }
-   */
 }
 
 //SERVER------------------------------------------------------------------------------------------
@@ -409,7 +408,6 @@ if (Meteor.isServer) {
   Meteor.methods({
     
     createGame: function(storyName, numberPlayers, rounds, firstSentence, lastSentence) {
-      Meteor._debug("Creating game");
       var id = Games.insert({
         Title: storyName, 
         PlayerCount: 1, 
@@ -424,7 +422,6 @@ if (Meteor.isServer) {
     },
 
     createPlayer: function(playerName) {
-      Meteor._debug("Creating player");
       var id = Players.insert({
         Name: playerName, 
         Score: 0, 
@@ -437,22 +434,18 @@ if (Meteor.isServer) {
     },
 
     setIsHost: function(playerID, isHost) {
-      Meteor._debug("Designating host");
       Players.update(playerID, {$set: {Host: isHost}});
     },
     
     setGameID: function(playerID, gameID) {
-      Meteor._debug("Setting gameID");
       Players.update(playerID, {$set: {GameID: gameID}});
     },
     
     incrementNumberPlayers: function(gameID) {
-      Meteor._debug("Incrementing players");
 	    Games.update(gameID, {$inc: {PlayerCount: 1}});
     },
 
     setPlayerGameState: function(playerID, gameState) {
-      Meteor._debug("Setting game state");
       Players.update(
 				playerID, {
 					$set: {GameState: gameState}
@@ -483,18 +476,9 @@ if (Meteor.isServer) {
 	    Games.update(gameID, {$inc: {CurrentRound: 1}});
     },
 
-    setRound: function(gameID, roundNum) {
-      Games.update(
-				gameID, {
-					$set: {Round: roundNum}
-				}
-			);
-    },
-    
-    submitSentence: function(gameID, playerID, roundNumber, text) {
+    stageOneSubmit: function(gameID, playerID, roundNumber, text) {
       /* Get the number of players in game */
       var numPlayers = Players.find({GameID: gameID}).fetch().length;
-			console.log("Players.find({GameID: " + gameID + "}) returns " + numPlayers);
 
       /* Add the sentence to the collection */
       PlayerSentences.insert({
@@ -519,21 +503,66 @@ if (Meteor.isServer) {
 				GameID: gameID, 
 				RoundNumber: roundNumber
 			}).fetch().length;
-      console.log("PlayerSentences.find({GameID: " + gameID + ", RoundNumber: " + roundNumber + "}) returns " + numSentences);
 
       /* Enable all players and move onto voting stage if ready */
-      console.log("Checking numbers...");
       if (numSentences == numPlayers) {
-        console.log("All sentences received! Updating players...");
 		    /* Set all players to gameState */
 		    for (var i=0; i<numPlayers; i++) {
-			    console.log("Updating player " + i);
 				  Players.update(
 						{GameID: gameID, GameState: {$ne: 8}}, 
 						{$set: {GameState: 8, CanPlay: true}}
 					);
 		    }
       }
+    },
+
+    stageTwoSubmit: function(gameID, playerID, sentenceID, roundNumber) {
+      /* Get the number of players in game */
+      var numPlayers = Players.find({GameID: gameID}).fetch().length;
+      console.log("Number of players: " + numPlayers);  
+ 
+      /* Vote for a sentence */
+      PlayerSentences.update(
+				sentenceID,
+				{$inc: {Votes: 1}}
+			);
+      console.log("PlayerSentences.update(" + sentenceID + ", {$inc: {Votes: 1}});");
+
+      /* Disable the player until the next stage */
+      Players.update(
+				playerID, {
+					$set: {
+			      CanPlay: false
+					}  	
+	   	  }
+			);
+ 
+      var sentences = PlayerSentences.find({GameID: gameID, RoundNumber: roundNumber}, {Votes: 1}).fetch(); 
+      var numVotes = 0;
+      for (var i=0; i<sentences.length; i++) {
+        numVotes += sentences[i].Votes;
+      }
+      console.log("Votes cast: " + numVotes);
+
+      /* Enable all players and move onto voting stage if ready */
+      if (numVotes == numPlayers) {
+
+		    /* Set all players to gameState */
+		    for (var i=0; i<numPlayers; i++) {
+				  Players.update(
+						{GameID: gameID, GameState: {$ne: 7}}, 
+						{$set: {GameState: 7, CanPlay: true}}
+					);
+		    }
+      	
+				/* Increment the round */
+      	Games.update(gameID, {$inc: {CurrentRound: 1}});      
+			}
+
+      /* Check to see if game is over */
+      //todo
+
+      
     }   
   });
 

@@ -13,6 +13,8 @@
 	{{> startGame}}	
   {{> stageOne}}
   {{> stageTwo}}
+  {{> stageThree}}
+  {{> results}}
 </body>
 
 <template name="goBack">
@@ -140,14 +142,57 @@
 
 <template name="stageTwo">
 	{{#if showStageTwo}}
-    HI!
+    {{#with game}}
+      <h3>{{Title}}</h3>
+      <p>Round {{CurrentRound}}/{{Rounds}}</p>
+      <p>{{FirstSentence}}</p>
+      <p>{{LastSentence}}</p>
+    {{/with}}
+    {{#if canPlay}}
+      <p>Vote for your favorite sentence!</p>
+      {{#each sentences}}
+        <p>
+          <input type="radio" name="sentenceRadio" value={{_id}} />
+          {{Text}}
+        </p>
+      {{/each}}
+      <p><input type="button" id="submit" value="Cast Vote" /></p>
+    {{else}}
+      <p>Vote cast!</p>
+      <p>Waiting for other players...</p>
+    {{/if}}
   {{/if}}
 </template>
 
-<template name ="sentences">
-  HEREHERHEHREHREHE
-  {{#each sentence}}
-      TESThaha
-      {{Text}}
+<template name="stageThree">
+
+</template>
+
+<template name="results">
+</template>
+
+<template name="round">
+  {{title}}
+</template>
+
+<template name="story">
+  <p>{{firstSentence}}</p>
+  {{#each sentences}}
   {{/each}}
+  <p>{{lastSentence}}</p>
+</template>
+
+<template name="scoreboard">
+</template>
+
+<template name="submitSentence">
+</template>
+
+<template name="vote">
+</template>
+
+<template name="voteResults">
+</template>
+
+<template name="chat">
 </template>
