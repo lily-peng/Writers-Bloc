@@ -4,13 +4,16 @@
 
 <body>
     <h1>Writer's Bloc (the best game on the internet)</h1>
-    {{> goBack}}
+  {{> goBack}}
 	{{> lobby}}
 	{{> createGame}}
 	{{> joinGame}}
 	{{> waitForGame}}
 	{{> rules}}
+	{{> story}}
 	{{> startGame}}	
+	{{> voting}}
+	{{> results}}
 </body>
 
 <template name="goBack">
@@ -61,12 +64,12 @@
 {{#if showWaitForGame}}
 
 	{{#each game}}
-		<h1><p>{{Title}}</p></h1>
+		<h1><p>{{Title}} {{_id}}</p></h1>
 	{{/each}}
 
 	<h3>Players Joined:</h3>
 		{{#each players}}
-			<h4><p>{{Name}}</p></h4>
+			<h4><p>{{Name}} {{_id}}</p></h4>
 		{{/each}}
 
 {{/if}}
@@ -84,17 +87,17 @@
   {{/if}}
 </template>
 
+<template name="story"> <!--Timer and Submitted sentences-->
+  {{#if showStory}}
+      <p style="color:red"><div id="timer">10</div></p>
+      <b>{{firstSentence}}</b>
+        <p>.... (next sentence goes here) ....</p> <!-- make this each sentence-->
+      <b>{{lastSentence}}</b>
+  {{/if}}
+</template>
+
 <template name="startGame">
     {{#if showStartGame}}
-        <p></p>
-        {{firstSentence}}
-        <p>.</p>
-        <p>.</p>
-        <p>.</p>
-        <p>.</p>
-        <p>.</p>
-        <p>.</p>
-        {{lastSentence}}
         {{#if notSubmitted}}
           <p>Submit your Sentence:</p>
           <textarea id="sentence" rows="4" cols="50"></textarea>    
@@ -103,16 +106,27 @@
 		    {{/if}}
 		    {{#if showSubmitted}}
 		      Waiting for other players to submit...
-		      
 		    {{/if}}
-		    
-        
     {{/if}}
 </template>
-<template name ="sentences">
-  HEREHERHEHREHREHE
-  {{#each sentence}}
-      TESThaha
-      {{Text}}
-  {{/each}}
+<template name ="voting">
+  {{#if showVoting}}
+      <p>Voting Phase!</p>
+      {{#if notVoted}}
+          {{#each sentence}}
+              <p><input type="button" id = "voteThis" value = "{{Text}}"></p>
+          {{/each}}
+      {{else}}
+          Waiting for other players to vote...
+      {{/if}}
+  {{/if}}
+</template>
+
+<template name ="results">
+  {{#if showResults}}
+      <p>Congratulations! The top scoring sentence will be added to the story.</p>
+      {{#each sortedSentence}}
+          <p>{{Text}}: {{Votes}}</p>
+      {{/each}}
+  {{/if}}
 </template>
