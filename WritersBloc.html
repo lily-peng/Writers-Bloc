@@ -1,96 +1,118 @@
 <head>
-
- <title>Writers-Bloc</title>
-
+	<title>Writers-Bloc</title>
 </head>
 
 <body>
-
- {{> hello}}
-
- {{> lobby}}
-
- {{> createGame}}
-
- {{> joinGame}}
-
+    <h1>Writer's Bloc (the best game on the internet)</h1>
+    {{> goBack}}
+	{{> lobby}}
+	{{> createGame}}
+	{{> joinGame}}
+	{{> waitForGame}}
+	{{> rules}}
+	{{> startGame}}	
 </body>
 
-<template name="hello">
-
- <h1>Welcome to Writers' Bloc</h1>
-
- {{greeting}}
-
- <input type="button" id = "return" value="Click" />
-
+<template name="goBack">
+    <input type="button" id= "lobby" value = "Go Back to Lobby">
 </template>
 
 <template name="lobby">
-
-{{#if showLobby}}
-
-       <br>
-
-   <input type="button" id = "creategame" value = "Create Game">
-
-       <br>
-
-   <input type="button" id = "joingame" value = "Join Game">
-
-       <br>
-
-   <input type="button" id = "settings" value = "Settings">
-
-{{/if}}
-
+	{{#if showLobby}}
+		<br>
+		<input type="button" id = "creategame" value = "Create Game">
+		<br>
+		<input type="button" id = "joingame" value = "Join Game">
+		<br>
+		<input type="button" id = "settings" value = "Settings">
+	{{/if}}
 </template>
 
 <template name="createGame">
-
-{{#if showCreateGame}}
-
-   <h3>Create a game:</h3>
-
-   <p>Enter your player name:</p>
-
-   <input type="text" id="playerName">
-
-       <br>
-
-   <p>Enter number of players (2-10):</p>
-
-   <input type="text" id="numberPlayers">    
-
-       <br>
-
-   <p>Enter your story name</p>
-
-   <input type="text" id="storyName">
-
-       <br>
-
-   <input type="button" id = "creategamenow" value = "Submit">
-
-{{/if}}
-
+	{{#if showCreateGame}}
+		<h3>Create a game:</h3>
+		<p>Enter number of players (2-10):</p>
+		<input type="text" id="numberPlayers">    
+		<br>
+		<p>Enter your story name:</p>
+		<input type="text" id="storyName">
+		<br>
+		<p>Enter the first sentence:*</p>
+		<input type="text" id="firstSentence">
+		<br>
+		<p>Enter the last sentence:*</p>
+		<input type="text" id="lastSentence">
+		<br>
+		*optional (leave blank for a random sentence)
+		<input type="button" id = "creategamenow" value = "Submit">
+	{{/if}}
 </template>
 
 <template name="joinGame">
+	{{#if showJoinGame}}
+		<h3>Join a game:</h3>
+		{{#each availableGames}}
+			<p>{{Title}} ({{PlayerCount}}/{{PlayersPerGame}}) <input id="join" name={{_id}} type="button" value="Join"></p>
+		{{/each}}
+	{{/if}}
+</template>
 
-{{#if showJoinGame}}
+<template name="waitForGame">
+{{#if showWaitForGame}}
 
-   <h3>Join a game:</h3>
+	{{#each game}}
+		<h1><p>{{Title}} {{_id}}</p></h1>
+	{{/each}}
 
-   {{#each availableGames}}
-
-     <p>{{Title}} ({{PlayerCount}}/{{PlayersPerGame}}) <input type="button" value="Join"></p>
-
-   {{/each}}
+	<h3>Players Joined:</h3>
+		{{#each players}}
+			<h4><p>{{Name}} {{_id}}</p></h4>
+		{{/each}}
 
 {{/if}}
 </template>
 
-<template name="waitForGame">
+<template name="rules">
+  {{#if showRules}}
+    <p><h3>Rules</h3></p>
+    <p>The screen will display the first sentence followed by the last sentence of the story.</p>
+    <p>Type what you think the next sentence of the story should be. When ready, click Submit.</p>
+    <p>Once all players have submitted, the voting period begins.</p>
+    <p>The sentence with the most votes will be added to the story... and the process repeats until the story is complete!</p>
+    <p>When you're ready, click Start!</p>
+    <p><input type="button" id = "startgame" value = "Start"></p>
+  {{/if}}
+</template>
 
+<template name="startGame">
+    {{#if showStartGame}}
+        <p></p>
+        {{firstSentence}}
+        <p>.</p>
+        <p>.</p>
+        <p>.</p>
+        <p>.</p>
+        <p>.</p>
+        <p>.</p>
+        {{lastSentence}}
+        {{#if notSubmitted}}
+          <p>Submit your Sentence:</p>
+          <textarea id="sentence" rows="4" cols="50"></textarea>    
+		      <br>
+		      <p><input type="button" id = "submitSentence" value = "Submit"></p>
+		    {{/if}}
+		    {{#if showSubmitted}}
+		      Waiting for other players to submit...
+		      
+		    {{/if}}
+		    
+        
+    {{/if}}
+</template>
+<template name ="sentences">
+  HEREHERHEHREHREHE
+  {{#each sentence}}
+      TESThaha
+      {{Text}}
+  {{/each}}
 </template>
