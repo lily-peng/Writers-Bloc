@@ -4,13 +4,11 @@
 
 <body>
   <h1>Writer's Bloc (the best game on the internet)</h1>
-  {{> goBack}}
 	{{> lobby}}
 	{{> createGame}}
 	{{> joinGame}}
 	{{> waitForGame}}
 	{{> rules}}
-	{{> startGame}}	
   {{> stageOne}}
   {{> stageTwo}}
   {{> stageThree}}
@@ -65,6 +63,7 @@
 		{{#each availableGames}}
 			<p>{{Title}} ({{PlayerCount}}/{{PlayersPerGame}}) <input id="join" name={{_id}} type="button" value="Join"></p>
 		{{/each}}
+    {{> chat}}
 	{{/if}}
 </template>
 
@@ -82,6 +81,7 @@
     {{else}}
       <p><input type="button" value="Start Game" disabled/></p>
     {{/if}}
+    {{> chat}}
   {{/if}}
 </template>
 
@@ -97,102 +97,131 @@
   {{/if}}
 </template>
 
-<template name="startGame">
-    {{#if showStartGame}}
-        <p></p>
-        {{firstSentence}}
-        <p>.</p>
-        <p>.</p>
-        <p>.</p>
-        <p>.</p>
-        <p>.</p>
-        <p>.</p>
-        {{lastSentence}}
-        {{#if notSubmitted}}
-          <p>Submit your Sentence:</p>
-          <textarea id="sentence" rows="4" cols="50"></textarea>    
-		      <br>
-		      <p><input type="button" id = "submitSentence" value = "Submit"></p>
-		    {{/if}}
-		    {{#if showSubmitted}}
-		      Waiting for other players to submit...		      
-		    {{/if}}
-		    
-        
-    {{/if}}
-</template>
-
 <template name="stageOne">
   {{#if showStageOne}}
-    {{#with game}}
-      <h3>{{Title}}</h3>
-      <p>Round {{CurrentRound}}/{{Rounds}}</p>
-      <p>{{FirstSentence}}</p>
-      <p>{{LastSentence}}</p>
-    {{/with}}
-    {{#if canPlay}}
-      <p>Submit a sentence!<input type="text" id="sentence" /></p>
-      <p><input type="button" id="submit" value="Submit" /></p> 
-    {{else}}
-      <p>Submitted!</p>
-      <p>Waiting for other players...</p> 
-    {{/if}}
+    <table>
+      <tr>
+        {{> round}}
+      </tr>
+      <tr>
+        <td>{{> story}}</td>
+        <td>{{> scoreboard}}</td>
+      </tr>
+      <tr>
+        {{> submitSentence}}
+      </tr>
+      <tr>
+        {{> chat}}
+      </tr>
+    </table>
   {{/if}}
 </template>
 
 <template name="stageTwo">
 	{{#if showStageTwo}}
-    {{#with game}}
-      <h3>{{Title}}</h3>
-      <p>Round {{CurrentRound}}/{{Rounds}}</p>
-      <p>{{FirstSentence}}</p>
-      <p>{{LastSentence}}</p>
-    {{/with}}
-    {{#if canPlay}}
-      <p>Vote for your favorite sentence!</p>
-      {{#each sentences}}
-        <p>
-          <input type="radio" name="sentenceRadio" value={{_id}} />
-          {{Text}}
-        </p>
-      {{/each}}
-      <p><input type="button" id="submit" value="Cast Vote" /></p>
-    {{else}}
-      <p>Vote cast!</p>
-      <p>Waiting for other players...</p>
-    {{/if}}
+    <table>
+      <tr>
+        {{> round}}
+      </tr>
+      <tr>
+        <td>{{> story}}</td>
+        <td>{{> scoreboard}}</td>
+      </tr>
+      <tr>
+        {{> vote}}
+      </tr>
+    </table>
   {{/if}}
 </template>
 
 <template name="stageThree">
-
+  {{#if showStageThree}}
+    <table>
+      <tr>
+        {{> round}}
+      </tr>
+      <tr>
+        <td>{{> story}}</td>
+        <td>{{> scoreboard}}</td>
+      </tr>
+      <tr>
+        {{> voteResults}}
+      </tr>
+    </table>
+  {{/if}}
 </template>
 
 <template name="results">
+  {{#if showResults}}
+    <h1>GAME OVER</h1>
+  {{/if}}
 </template>
 
 <template name="round">
   {{title}}
 </template>
 
-<template name="story">
-  <p>{{firstSentence}}</p>
-  {{#each sentences}}
-  {{/each}}
-  <p>{{lastSentence}}</p>
+<template name="story"> 
+  {{#with game}}
+    <p>{{firstSentence}}</p>
+    <p>{{lastSentence}}</p>
+  {{/with}}
 </template>
 
 <template name="scoreboard">
+  {{#each players}}
+    <p>{{Name}}: {{Score}}</p>
+  {{/each}}
 </template>
 
 <template name="submitSentence">
+  {{#if canPlay}}
+    <p>Submit a sentence!</p>
+    <p>
+      <input type="text" id="sentence" />
+      <input type="button" id="sentenceButton" value="Submit" />
+    </p> 
+  {{else}}
+    <p>Submitted!</p>
+    <p>Waiting for other players...</p> 
+  {{/if}}
 </template>
 
 <template name="vote">
+  {{#if canPlay}}
+    <p>Vote for your favorite sentence!</p>
+    {{#each sentences}}
+      <p>
+        <input type="radio" name="sentenceRadio" value={{_id}} />
+        {{Text}}
+      </p>
+    {{/each}}
+    <p><input type="button" id="castVote" value="Cast Vote" /></p>
+  {{else}}
+    <p>Vote cast!</p>
+    <p>Waiting for other players...</p>
+  {{/if}}
 </template>
 
 <template name="voteResults">
+  {{#each sentences}}
+    {{Text}}: {{Votes}}
+  {{/each}}
+  {{#if canPlay}}
+    <p><input type="button" id="nextRound" value="Continue" /></p>
+  {{else}}
+    <p>Waiting for other players...</p>
+  {{/if}}
 </template>
 
 <template name="chat">
+  <textarea id="chatHistory" readonly>
+    {{#each messages}}
+      {{PlayerName}}: {{Text}}
+    {{/each}}
+  </textarea>
+  <p>
+    <input type="text" id="chatText" /> 
+    <input type="button" id="submitMessage" value="Send" />
+  </p>
 </template>

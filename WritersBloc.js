@@ -72,6 +72,7 @@ lasts = new Array('The end. Or is it?',
 
 Games = new Meteor.Collection("games");
 Players = new Meteor.Collection("players");
+Messages = new Meteor.Collection("messages");
 FirstSentences = new Meteor.Collection("firstSentences");
 for (var i = 0; i < firsts.length; i++) {
   FirstSentences.insert(firsts[i]);
@@ -157,6 +158,9 @@ if (Meteor.isClient) {
     /* subscribe to Sentences */
     Meteor.subscribe("playerSentences", gameID, gameState, currentRound);
 
+    /* subscribe to Messages */
+    Meteor.subscribe("messages", gameID);
+
     /* join a game I created */
     if (gameState == SHOW_CREATE_GAME && gameID != null) {
       Meteor.call("setGameID", playerID, gameID);
@@ -184,18 +188,6 @@ if (Meteor.isClient) {
   
   Template.rules.showRules = function() {
     return Session.get("gameState") == SHOW_RULES;
-  }
-  
-  Template.startGame.showStartGame = function() {
-    return Session.get("gameState") == SHOW_START_GAME;
-  }
-  
-  Template.startGame.notSubmitted = function() {
-    return Session.get("notSubmitted");
-  }
-  
-  Template.startGame.showSubmitted = function() {
-    return Session.get("showSubmitted");
   }
 
   Template.stageOne.showStageOne = function() {
@@ -259,13 +251,6 @@ if (Meteor.isClient) {
         return game;
       return "";
     },
-
-    canPlay: function() {
-      var playerID = Session.get("playerID");
-      var player = Players.findOne(playerID, {fields: {CanPlay: 1}});
-      var canPlay = player.CanPlay;
-      return canPlay;
-    }
   });
 
   Template.stageTwo.helpers({
@@ -274,19 +259,7 @@ if (Meteor.isClient) {
       if (game)
         return game;
       return "";
-    },
-
-    canPlay: function() {
-      var playerID = Session.get("playerID");
-      var player = Players.findOne(playerID, {fields: {CanPlay: 1}});
-      var canPlay = player.CanPlay;
-      return canPlay;
-    },
-
-    sentences: function() {
-      var sentences = PlayerSentences.find({});
-      return sentences;
-    }    
+    }
   });
 
   Template.round.helpers({
@@ -300,6 +273,57 @@ if (Meteor.isClient) {
       }
     }
   }); 
+
+  Template.scoreboard.helpers({
+    players: function() {
+      var players = Players.find({}, {sort: {Score: -1}});
+      return players;
+    }
+  });
+
+  Template.submitSentence.helpers({
+    canPlay: function() {
+      var playerID = Session.get("playerID");
+      var player = Players.findOne(playerID, {fields: {CanPlay: 1}});
+      var canPlay = player.CanPlay;
+      return canPlay;
+    }    
+  });
+
+  Template.vote.helpers({
+    canPlay: function() {
+      var playerID = Session.get("playerID");
+      var player = Players.findOne(playerID, {fields: {CanPlay: 1}});
+      var canPlay = player.CanPlay;
+      return canPlay;
+    },
+
+    sentences: function() {
+      var sentences = PlayerSentences.find({}, {sort: {Random: 1}});
+      return sentences;
+    }    
+  });
+
+  Template.voteResults.helpers({
+    canPlay: function() {
+      var playerID = Session.get("playerID");
+      var player = Players.findOne(playerID, {fields: {CanPlay: 1}});
+      var canPlay = player.CanPlay;
+      return canPlay;
+    },
+
+    sentences: function() {
+      var sentences = PlayerSentences.find({}, {sort: {Votes: -1}});
+      return sentences;
+    }
+  });
+
+  Template.chat.helpers({
+    messages: function() {
+      var messages = Messages.find({}, {sort: {Date: 1}});
+      return messages;
+    }
+  });
   /////////////////Template Events//////////////////////////////////
   
   Template.goBack.events({
@@ -369,8 +393,8 @@ if (Meteor.isClient) {
     }
   });
 
-  Template.stageOne.events({
-    'click #submit': function(event) {
+  Template.submitSentence.events({
+    'click #sentenceButton': function(event) {
       var gameID = Session.get("gameID");
       var currentRound = Session.get("currentRound");
       var playerID = Session.get("playerID");
@@ -379,8 +403,8 @@ if (Meteor.isClient) {
     }
   });
 
-  Template.stageTwo.events({
-    'click #submit': function(event) {
+  Template.vote.events({
+    'click #castVote': function(event) {
       var gameID = Session.get("gameID");
       var playerID = Session.get("playerID");
       var currentRound = Session.get("currentRound");
@@ -393,6 +417,28 @@ if (Meteor.isClient) {
 		    }
 		  }
       Meteor.call("stageTwoSubmit", gameID, playerID, sentenceID, currentRound);    
+    }
+  });
+
+  Template.voteResults.events({
+    'click #nextRound': function(event) {
+      var gameID = Session.get("gameID");
+      var playerID = Session.get("playerID");
+      Meteor.call("stageThreeSubmit", gameID, playerID);
+    }
+  });
+
+  Template.chat.events({
+    'click #submitMessage': function(event) {
+      var gameID = Session.get("gameID");
+      var playerID = Session.get("playerID");
+      var playerName = Players.findOne(playerID).Name;
+      var textbox = document.getElementById("chatText");
+      var text = textbox.value;
+      textbox.value = "";
+      Meteor.call("insertMessage", gameID, playerName, text);
+      var history = document.getElementById("chatHistory");
+      history.scrollTop = history.scrollHeight;
     }
   });
 }
@@ -476,6 +522,11 @@ if (Meteor.isServer) {
 	    Games.update(gameID, {$inc: {CurrentRound: 1}});
     },
 
+    insertMessage: function(gameID, playerName, text) {
+      var now = new Date();
+      Messages.insert({GameID: gameID, PlayerName: playerName, Text: text, Date: now});
+    },
+
     stageOneSubmit: function(gameID, playerID, roundNumber, text) {
       /* Get the number of players in game */
       var numPlayers = Players.find({GameID: gameID}).fetch().length;
@@ -486,7 +537,8 @@ if (Meteor.isServer) {
 				PlayerID: playerID, 
         RoundNumber: roundNumber,
 				Text: text, 
-				Votes: 0
+				Votes: 0,
+        Random: Math.random()
 			});
 
       /* Disable the player until the next stage */
@@ -526,7 +578,6 @@ if (Meteor.isServer) {
 				sentenceID,
 				{$inc: {Votes: 1}}
 			);
-      console.log("PlayerSentences.update(" + sentenceID + ", {$inc: {Votes: 1}});");
 
       /* Disable the player until the next stage */
       Players.update(
@@ -542,27 +593,73 @@ if (Meteor.isServer) {
       for (var i=0; i<sentences.length; i++) {
         numVotes += sentences[i].Votes;
       }
-      console.log("Votes cast: " + numVotes);
 
-      /* Enable all players and move onto voting stage if ready */
+      /* See if everyone has voted */
       if (numVotes == numPlayers) {
+
+        /** Give one point to the winner (TODO: fix later!) 
+         * +1 per vote
+         * +3 untied 1st
+         * +2 tied 1st
+         * +1 2nd
+         */
+        var winnerID = PlayerSentences.findOne({GameID: gameID, RoundNumber: roundNumber}, {sort: {Votes: -1}}).PlayerID;
+        Players.update(
+          winnerID,
+          {$inc: {Score: 3}}
+        );
 
 		    /* Set all players to gameState */
 		    for (var i=0; i<numPlayers; i++) {
 				  Players.update(
-						{GameID: gameID, GameState: {$ne: 7}}, 
-						{$set: {GameState: 7, CanPlay: true}}
+						{GameID: gameID, GameState: {$ne: 9}}, 
+						{$set: {GameState: 9, CanPlay: true}}
 					);
-		    }
-      	
-				/* Increment the round */
-      	Games.update(gameID, {$inc: {CurrentRound: 1}});      
-			}
+		    }      
+			}     
+    },
 
-      /* Check to see if game is over */
-      //todo
+    stageThreeSubmit: function(gameID, playerID, currentRound) {
+      /* Disable the player until the next stage */
+      Players.update(
+				playerID, {
+					$set: {
+			      CanPlay: false
+					}  	
+	   	  }
+			);  
 
-      
+      var numPlayers = Games.findOne(gameID, {$fields: {PlayerCount: 1}}).PlayerCount;
+      var numReadyPlayers = Players.find({GameID: gameID, CanPlay: false}).fetch().length;
+
+      /* See if all players are ready */     	
+      if (numPlayers == numReadyPlayers) {
+
+        var rounds = Games.findOne(gameID, {Rounds: 1}).Rounds;
+ 				var nextStage;
+
+        /* See if game is over */
+        if (currentRound == rounds) {
+
+          /* Results */
+          nextStage = 10;
+        } else {
+
+          /* Stage 1 */
+          nextStage = 7;
+ 
+					/* Increment the round */
+		      Games.update(gameID, {$inc: {CurrentRound: 1}});
+        }
+
+			  /* Set all players to gameState */
+			  for (var i=0; i<numPlayers; i++) {
+					Players.update(
+						{GameID: gameID, GameState: {$ne: nextStage}}, 
+						{$set: {GameState: nextStage, CanPlay: true}}
+					);
+			  } 
+      }
     }   
   });
 
@@ -582,5 +679,9 @@ if (Meteor.isServer) {
     if (gameState == 8)
       return PlayerSentences.find({GameID: gameID, RoundNumber: roundNumber});
     return null;
+  });
+
+  Meteor.publish("messages", function(gameID) {
+    return Messages.find({GameID: gameID});
   });
 }
