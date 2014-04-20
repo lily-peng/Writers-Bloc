@@ -74,49 +74,66 @@ lasts = new Array('The end. Or is it?',
 
 if (Meteor.isClient) {
 
-  var SHOW_LOBBY = 0;
-  var SHOW_CREATE_GAME = 1;
-  var SHOW_JOIN_GAME = 2;
-  var SHOW_WAIT_FOR_GAME = 3;
-  var SHOW_SETTINGS = 4;
-  var SHOW_RULES = 5;
-  var SHOW_START_GAME = 6;
-  var SHOW_STAGE_ONE = 7;
-  var SHOW_STAGE_TWO = 8;
-  var SHOW_STAGE_THREE = 9;
+  /* Game state constants */
+  SHOW_LOBBY = 0;
+  SHOW_CREATE_GAME = 1;
+  SHOW_JOIN_GAME = 2;
+  SHOW_WAIT_FOR_GAME = 3;
+  SHOW_SETTINGS = 4;
+  SHOW_RULES = 5;
+  SHOW_START_GAME = 6;
+  SHOW_STAGE_ONE = 7;
+  SHOW_STAGE_TWO = 8;
+  SHOW_STAGE_THREE = 9;
 
   Meteor.startup(function () {  
-    // code to run on server at startup
-    // prompt for name
+    /* Create the collections */
     Games = new Meteor.Collection("games");
     Players = new Meteor.Collection("players");
     FirstSentences = new Meteor.Collection("firstSentences");
     LastSentences = new Meteor.Collection("lastSentences");
     PlayerSentences = new Meteor.Collection("playerSentences");
-    
+  
+    /* Subscribe to static collections */
+    Meteor.subscribe("firstSentences");
+    Meteor.subscribe("lastSentences");
+
+    /* Set initial Session variables */
+    Session.set("gameState", SHOW_LOBBY);
+    Session.set("myGameID", null);
+    Session.set("notSubmitted", true);
+    Session.set("showSubmitted", false);
+    Session.set("roundNum", 0);  
+  
+    /* Create the player */
     var playerName = prompt("Please enter your name:", "");
     Meteor.call('createPlayer', playerName, function(error, result) {
       console.log("PLAYER_ID: " + result);
       Session.set("myPlayerID", result);
+      console.log("SESSION_PLAYER_ID_1: " + Session.get("myPlayerID"));
     });    
-    console.log("SESSION_PLAYER_ID: " + Session.get("myPlayerID"));
-    Session.set("gameState", SHOW_LOBBY);
+    console.log("SESSION_PLAYER_ID_2: " + Session.get("myPlayerID"));
   });
  
   Deps.autorun(function () {
-    var gameState = Session.get("gameState");
+    /* Reactive variables */
     var gameID = Session.get("myGameID");
+    var playerID = Session.get("myPlayerID");
+    var gameState = Session.get("gameState");
+
+    /* subscribe to Games */
     Meteor.subscribe("games", gameState, gameID);
+
+    /* subscribe to Players */
     Meteor.subscribe("players", gameID);
-    Meteor.subscribe("firstSentences");
-    Meteor.subscribe("lastSentences");
+
+    /* join a game I created */
+    if (gameState == SHOW_CREATE_GAME && gameID != null) {
+      Meteor.call("setGameID", playerID, gameID);
+      Session.set("gameState", SHOW_WAIT_FOR_GAME);
+    }
   });
 
-  Session.set("gameState", SHOW_LOBBY);
-  Session.set("notSubmitted", true);
-  Session.set("showSubmitted", false);
-  Session.set("roundNum", 0);
-  
   Template.lobby.showLobby = function() {
     return Session.get("gameState") == SHOW_LOBBY;
   }
@@ -162,16 +179,14 @@ if (Meteor.isClient) {
     game: function() {
       var game = Games.find({});
       return game;
-    }
-  });
+    },
 
-  Template.waitForGame.helpers({
     players: function() {
       var players = Players.find({});
       return players;
     }
   });
-  
+
   Template.startGame.helpers({
     firstSentence: function() {
       var sent = Session.get("firstSentence");
@@ -211,40 +226,31 @@ if (Meteor.isClient) {
       var numberPlayers = document.getElementById("numberPlayers").value;
       var storyName = document.getElementById("storyName").value;
       var playerID = Session.get("myPlayerID");      
-      Meteor.call("createGame", myGameID, storyName, parseInt(numberPlayers), function(error, result) {
-        console.log("GAME_ID: " + result);
-        Session.set("myGameID", result);
-      });
-      var myGameID = Session.get("myGameID");
+
       var firstSentence = document.getElementById("firstSentence").value;
-      var lastSentence = document.getElementById("lastSentence").value;     
-      if (firstSentence != ""){
-          Session.set("firstSentence", firstSentence);
-      } else {
-          var rand1 = Math.floor((Math.random()*firsts.length)+1);
-          Session.set("firstSentence", firsts[rand1]); //set firstSentence to random
-      }
-      if (lastSentence != ""){
-          Session.set("lastSentence", lastSentence);
-      } else {
-          var rand2 = Math.floor((Math.random()*lasts.length)+1);
-          Session.set("lastSentence", lasts[rand2]); //set lastSentence to random
-      }
-      
-      Meteor.call("setGameID", playerID, myGameID);
-      console.log("SESSION_GAME_ID: " + Session.get("myGameID"));
-      Session.set("gameState", SHOW_WAIT_FOR_GAME);
+      if (firstSentence == "") {
+        firstSentence = firsts[Math.floor((Math.random()*firsts.length)+1)];
+      } 
+
+      var lastSentence = document.getElementById("lastSentence").value;       
+      if (lastSentence == "") {
+        lastSentence = lasts[Math.floor((Math.random()*lasts.length)+1)];
+      } 
+
+      Meteor.call("createGame", storyName, parseInt(numberPlayers), function(error, result) {
+        Session.set("myGameID", result);
+      });    
     }
   });
   
   Template.joinGame.events({
     'click #join': function(event) {
       var clicked = event.target;
-      var clickedName = clicked.name;
+      var gameID = clicked.name;
       var playerID = Session.get("myPlayerID");
-      Meteor.call("incrementNumberPlayers", clickedName);
-      Meteor.call("setGameID", playerID, clickedName);
-      Session.set("myGameID", clickedName);
+		  Meteor.call("incrementNumberPlayers", gameID);
+      Meteor.call("setGameID", playerID, gameID);
+      Session.set("myGameID", gameID);
       Session.set("gameState", SHOW_WAIT_FOR_GAME);
     }
   });
@@ -319,6 +325,7 @@ if (Meteor.isClient) {
 if (Meteor.isServer) {
 
   Meteor.startup(function () {
+    Future = Npm.require('fibers/future');
     Games = new Meteor.Collection("games");
     Players = new Meteor.Collection("players");
     FirstSentences = new Meteor.Collection("firstSentences");
@@ -334,35 +341,47 @@ if (Meteor.isServer) {
 
   Meteor.methods({
     
-    createGame: function(gameID, storyName, numberPlayers) {
-      var id = Games.insert({Title: storyName, PlayerCount: 1, PlayersPerGame: numberPlayers, Round: 0});
+    createGame: function(storyName, numberPlayers, firstSentence, lastSentence) {
+      var id = Games.insert({
+        Title: storyName, 
+        PlayerCount: 1, 
+        PlayersPerGame: numberPlayers, 
+        Round: 0, 
+        FirstSentence: firstSentence, 
+        LastSentence: lastSentence,
+        Sentences: []
+      });
       return id;
     },
 
     createPlayer: function(playerName) {
-       var id = Players.insert({Name: playerName, Score: 0, GameID: null});
-       return id;
+      var id = Players.insert({
+        Name: playerName, 
+        Score: 0, 
+        GameID: null
+      });
+      return id;
     },
     
     setGameID: function(playerID, gameID) {
-        Players.update(playerID, {$set: {GameID: gameID}});
+      Players.update(playerID, {$set: {GameID: gameID}});
     },
     
     incrementNumberPlayers: function(gameID) {
-	  Games.update(gameID, {$inc: {PlayerCount: 1}});
+	    Games.update(gameID, {$inc: {PlayerCount: 1}});
     },
     
-    setRound: function(gameID, roundNum){
-        Games.update(gameID, {$set: {Round: roundNum}});
+    setRound: function(gameID, roundNum) {
+      Games.update(gameID, {$set: {Round: roundNum}});
     },
     
     addPlayerSentence: function(gameID, playerID, text, votes) {
-        PlayerSentences.insert({GameID: gameID, PlayerID: playerID, Text: text, Votes: votes});
+      PlayerSentences.insert({GameID: gameID, PlayerID: playerID, Text: text, Votes: votes});
     }   
   });
 
   Meteor.publish("games", function(gameState, gameID) {
-	if (gameState < 3) {
+	  if (gameState < 3) {
       return Games.find({$where: "this.PlayerCount < this.PlayersPerGame"});
     } else {
       return Games.find(gameID);
@@ -374,6 +393,6 @@ if (Meteor.isServer) {
   });
   
   Meteor.publish("playerSentences", function() {
-      return PlayerSentences.find({});
+    return PlayerSentences.find({});
   });
 }
