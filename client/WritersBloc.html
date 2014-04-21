@@ -23,15 +23,15 @@
 	{{#if showLobby}}
 		<p><center><input type="button" id = "creategame" value = "Create a Game" class="lobby"></center></p>
 		<p><center><input type="button" id = "joingame" value = "Join a Game" class="lobby"></center></p>
-		<p><center><input type="button" id = "rules" value = "Read the Rules" class="lobby"></center></p>
+		<p><center><input type="button" id = "rules" value = "Read the Rules" class="lobby"></center></p>
 		<center>(c) Simon, Lily, Brian, Tucker</center>
 	{{/if}}
 </template>
 
 <template name="createGame">
-	{{#if showCreateGame}}<center>
-		<h3>Create a game:</h3>
-		<p>Enter your story name:</p>
+	{{#if showCreateGame}}
+		<h3>Create a game:</h3><center>
+		<p>Name:</p>
 		  <input type="text" id="storyName">
 		<br>
 		
@@ -57,13 +57,13 @@
 </template>
 
 <template name="joinGame">
-	{{#if showJoinGame}}
+	{{#if showJoinGame}}
 	<div id = "wrapper">
 	  <div id = "findGametoJoin">
-      Join a game:
-      {{#each availableGames}}
-        <p><button id = "join" type="submit" class = "joinButton"><b>{{Title}}</b><br>Players: {{PlayerCount}}/{{PlayersPerGame}}</button></p>
-      {{/each}}
+		Join a game:
+		{{#each availableGames}}
+			<p><button id = "join" name={{_id}} value = "join" type="submit" class = "joinButton"><b>{{Title}}</b><br>Players: {{PlayerCount}}/{{PlayersPerGame}}</button></p>
+		{{/each}}
     </div>
     {{> chat}}
     </div>
@@ -247,7 +247,7 @@
       </div>
       <div id = "send">
       <p>
-        <input type="text" id="chatText" style='width:70%;' /> 
+        <input type="text" id="chatText" style='width:60%;' /> 
         <input type="button" id="submitMessage" value="Send"/>
       </p>
       </div>
