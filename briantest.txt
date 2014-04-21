@@ -1,0 +1,216 @@
+//SHARED AREA-------------------------------------------------------------------------------------
+
+Games = new Meteor.Collection("games");
+Players = new Meteor.Collection("players");
+FirstSentences = new Meteor.Collection("firstSentences");
+LastSentences = new Meteor.Collection("lastSentences");
+/*for (var i = 0; i < firsts.length; i++) {
+    FirstSentences.insert(firsts[i]);
+}
+for (var i = 0; i < lasts.length; i++) {
+    LastSentences.insert(lasts[i]);
+}*/
+//                    MAKE SURE YOU HAVE ALLSENTENCES.JS FILE IN YOUR DIRECTORY FOR ABOVE CODE
+
+//CLIENT------------------------------------------------------------------------------------------
+
+if (Meteor.isClient) {
+
+  var SHOW_LOBBY = 0;
+  var SHOW_CREATE_GAME = 1;
+  var SHOW_JOIN_GAME = 2;
+  var SHOW_WAIT_FOR_GAME = 3;
+  var SHOW_SETTINGS = 4;
+  var SHOW_RULES = 5;
+  var SHOW_START_GAME = 6;
+  var SHOW_STAGE_ONE = 7;
+  var SHOW_STAGE_TWO = 8;
+  var SHOW_STAGE_THREE = 9;
+
+  Meteor.startup(function () {
+    // code to run on server at startup
+    // prompt for name
+    var playerName = prompt("Please enter your name:", "");
+    var playerID = new Date().getTime();
+    var _id = Meteor.call('createPlayer', playerName, playerID);
+    Session.set("myPlayerID", playerID);
+    Session.set("myGameID", null);
+    Session.set("gameState", SHOW_LOBBY);
+  });
+  
+  //Show functions
+
+Deps.autorun(function () {
+	var gameState = Session.get("gameState");
+	var gameID = Session.get("myGameID");
+	Meteor.subscribe("games", gameState, gameID);
+	Meteor.subscribe("players", gameID);
+	Meteor.subscribe("firstSentences");
+	Meteor.subscribe("lastSentences");
+});
+
+  Template.lobby.showLobby = function() {
+    return Session.get("gameState")==SHOW_LOBBY;
+  }
+
+  Template.createGame.showCreateGame = function() {
+    return Session.get("gameState")==SHOW_CREATE_GAME;
+  }
+
+  Template.joinGame.showJoinGame = function() {
+    return Session.get("gameState")==SHOW_JOIN_GAME;
+  }
+  
+  Template.startGame.showStartGame = function() {
+    return Session.get("gameState")==SHOW_START_GAME;
+  }
+
+  Template.waitForGame.showWaitForGame = function() {
+    return Session.get("gameState")==SHOW_WAIT_FOR_GAME;
+  }
+
+  ////////////////////Template Functions//////////////////////////
+
+//**Parameters for Games.find({}) needs to only display games with playerCount < PlayersPerGame
+  Template.joinGame.availableGames = function() {
+    var games = Games.find({});
+    return games;
+  }
+
+  Template.waitForGame.game = function() {
+    var gameId = Session.get("myGameID");
+    var game = Games.find({});
+    return game;
+  }
+
+  Template.waitForGame.players = function() {
+    var gameId = Session.get("myGameID");
+    var players = Players.find({});
+    return players;
+  }
+  
+  Template.startGame.firstSentence = function() {
+      var sent = Session.get("firstSentence");
+      return sent;
+  }
+
+  Template.startGame.lastSentence = function() {
+      var sent = Session.get("lastSentence");
+      return sent;
+  }
+
+  /////////////////Template Events//////////////////////////////////
+  
+  Template.goBack.events({
+      'click #lobby' : function(event) {
+             Session.set("gameState", SHOW_LOBBY);
+      }
+  });
+
+  Template.lobby.events({
+    'click #creategame': function (event) {
+      Session.set("gameState", SHOW_CREATE_GAME);
+    },
+
+    'click #joingame': function (event) {
+      Session.set("gameState", SHOW_JOIN_GAME);
+    },
+
+    'click #settings': function (event) {
+      Session.set("gameState", SHOW_SETTINGS);
+    }
+  });
+
+  Template.createGame.events({
+    'click #creategamenow': function(event) {
+      var numberPlayers = document.getElementById("numberPlayers").value;
+      var storyName = document.getElementById("storyName").value;
+      var playerID = Session.get("myPlayerID");
+      var myGameID = new Date().getTime();
+      Meteor.call("createGame", myGameID, storyName, numberPlayers);
+      var firstSentence = document.getElementById("firstSentence").value;
+      var lastSentence = document.getElementById("lastSentence").value;
+      
+      if (firstSentence != null){
+          Session.set("firstSentence", firstSentence);
+      }
+      else {
+          var rand1 = Math.floor((Math.random()*firsts.length)+1);
+          Session.set("firstSentence", firsts[rand1]); //set firstSentence to random
+      }
+      if (lastSentence != null){
+          Session.set("lastSentence", lastSentence);
+      }
+      else {
+          var rand2 = Math.floor((Math.random()*lasts.length)+1);
+          Session.set("lastSentence", lasts[rand2]); //set lastSentence to random
+      }
+      
+      
+      Meteor.call("setGameID", playerID, myGameID);
+      
+      Session.set("myGameID", myGameID);
+      Session.set("gameState", SHOW_WAIT_FOR_GAME);
+    }
+  });
+  
+  Template.joinGame.events({
+    'click #join': function(event) {
+      var clicked = event.target;
+      var clickedName = clicked.name;
+      var playerID = Session.get("myPlayerID");
+      Meteor.call("incrementNumberPlayers", clickedName);
+      Meteor.call("setGameID", playerID, clickedName);
+      Session.set("myGameID", clickedName);
+      Session.set("gameState", SHOW_WAIT_FOR_GAME);
+    }
+  });
+
+  Template.startGame.events({
+      'click #start' : function(event) {
+          //find first sentence
+          //var first =
+          //Session.set("firstSentence", );
+          //find last sentence
+      }
+  });
+}
+
+//SERVER------------------------------------------------------------------------------------------
+
+if (Meteor.isServer) {
+
+  Meteor.startup(function () {
+    // code to run on server at startup
+  });
+
+  Meteor.methods({
+   
+    createGame: function(gameID, storyName, numberPlayers) {
+      Games.insert({GameID: gameID, Title: storyName, PlayerCount: 1, PlayersPerGame: numberPlayers});
+    },
+
+    createPlayer: function(playerName, playerID) {
+	Players.insert({Name: playerName, Score: 0, Sentences: "", GameID: null, PlayerID: playerID});
+    },
+
+    setGameID: function(playerID, gameID) {
+	Players.update({PlayerID: playerID}, {$set: {GameID: gameID}});
+    },
+
+    incrementNumberPlayers: function(gameID) {
+	Games.update({GameID: gameID}, {$inc: {PlayerCount: 1}});
+    }
+  
+  });
+
+  Meteor.publish("games", function(gameState, gameID) {
+	if(gameState < 3){return Games.find({});}
+	else{return Games.find({GameID: gameID});}
+  });
+  
+  Meteor.publish("players", function(gameID) {
+      return Players.find({GameID: gameID});
+  });
+  
+}
