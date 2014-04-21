@@ -170,7 +170,7 @@ Meteor.methods({
       /* How many with that score? */
       var winners = PlayerSentences.find({Votes: topScore}).fetch();
 
-      Players.update({GameID: gameID}
+     //Players.update({GameID: gameID}
 
       /* Award winner(s) */
       /*
