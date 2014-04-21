@@ -24,13 +24,13 @@
 		<p><center><input type="button" id = "creategame" value = "Create a Game" class="lobby"></center></p>
 		<p><center><input type="button" id = "joingame" value = "Join a Game" class="lobby"></center></p>
 		<p><center><input type="button" id = "rules" value = "Read the Rules" class="lobby"></center></p>
-		<center>(c) Simon, Lily, Brian, Tucker</center>
+		<center><p>(c) Simon, Lily, Brian, Tucker</p></center>
 	{{/if}}
 </template>
 
 <template name="createGame">
-	{{#if showCreateGame}}
-		<h3>Create a game:</h3><center>
+	{{#if showCreateGame}}<center>
+		<h3>Create a game:</h3>
 		<p>Name:</p>
 		  <input type="text" id="storyName">
 		<br>
@@ -108,59 +108,80 @@
 </template>
 
 <template name="stageOne">
-  {{#if showStageOne}}
-    <table>
-      <tr>
-        {{> round}}
-      </tr>
-      <tr>
-        <td>{{> story}}</td>
-        <td>{{> scoreboard}}</td>
-      </tr>
-      <tr>
-        {{> submitSentence}}
-      </tr>
-      <tr>
-        {{> chat}}
-      </tr>
-    </table>
-    {{> timer}}
+  {{#if showStageOne}}
+  <center>
+<div class="grid">
+   <div class="col-2-3">
+      <p>{{>round}}</p>
+   </div>
+   <div class="col-1-3">
+      <p><div align="right">{{>timer}}</div></p>
+   </div>
+    <div class="col-2-3">
+      <p>{{>story}}</p>
+   </div>
+   <div class="col-1-3">
+      <p><b>Players:</b></p>
+      <p>{{>scoreboard}}</p>
+   </div>
+   <div class="col-all">
+      <p>{{>submitSentence}}</p>
+   </div>
+    <div class="col-all">
+      <p>{{>chat2}}</p>
+   </div>
+</div>
+  </center>
   {{/if}}
 </template>
 
 <template name="stageTwo">
 	{{#if showStageTwo}}
-    <table>
-      <tr>
-        {{> round}}
-      </tr>
-      <tr>
-        <td>{{> story}}</td>
-        <td>{{> scoreboard}}</td>
-      </tr>
-      <tr>
-        {{> vote}}
-      </tr>
-    </table>
-    {{> timer}}
+  <center>
+<div class="grid">
+   <div class="col-2-3">
+      <p>{{>round}}</p>
+   </div>
+   <div class="col-1-3">
+      <p><div align="right">{{>timer}}</div></p>
+   </div>
+    <div class="col-2-3">
+      <p>{{>story}}</p>
+   </div>
+   <div class="col-1-3">
+      <p><b>Players:</b></p>
+      <p>{{>scoreboard}}</p>
+   </div>
+   <div class="col-all">
+      <p>{{>vote}}</p>
+   </div>
+</div>
+  </center>
   {{/if}}
 </template>
 
 <template name="stageThree">
   {{#if showStageThree}}
-    <table>
-      <tr>
-        {{> round}}
-      </tr>
-      <tr>
-        <td>{{> story}}</td>
-        <td>{{> scoreboard}}</td>
-      </tr>
-      <tr>
-        {{> voteResults}}
-      </tr>
-    </table>
-    {{> timer}}
+  <center>
+<div class="grid">
+   <div class="col-2-3">
+      <p>{{>round}}</p>
+   </div>
+   <div class="col-1-3">
+      <p><div align="right">{{>timer}}</div></p>
+   </div>
+    <div class="col-2-3">
+      <p>{{>story}}</p>
+   </div>
+   <div class="col-1-3">
+      <p><b>Players:</b></p>
+      <p>{{>scoreboard}}</p>
+   </div>
+   <div class="col-all">
+      <p>{{>voteResults}}</p>
+   </div>
+</div>
+  </center>
   {{/if}}
 </template>
 
@@ -246,6 +267,22 @@
       {{/each}}
       </div>
       <div id = "send">
+      <p>
+        <input type="text" id="chatText" style='width:60%;' /> 
+        <input type="button" id="submitMessage" value="Send"/>
+      </p>
+      </div>
+  </div>
+</template>
+
+<template name="chat2">
+  <div id = "chat2">
+      <div id = "chatHistory2" >
+      {{#each messages}}
+          <strong>{{PlayerName}}:</strong> {{Text}}<br>
+      {{/each}}
+      </div>
+      <div id = "send2">
       <p>
         <input type="text" id="chatText" style='width:60%;' /> 
         <input type="button" id="submitMessage" value="Send"/>

@@ -7,7 +7,6 @@ h3 {
   font-size:30px;
   font-family: Arial, sans-serif;
 }
-
 p {
   font-family: Arial, sans-serif;
 }
@@ -190,4 +189,34 @@ p {
 }.createButton:active {
 	position:relative;
 	top:1px;
+}
+
+[class*='col-'] {
+	float: left;
+}
+.col-2-3 {
+	width: 66.66%;
+}
+.col-1-3 {
+	width: 33.33%;
+}
+.col-all {
+    width: 100%;
+}
+#chat2 {
+  display: inline-block;
+  position:relative;
+  width: 35%;
+}
+#chatHistory2 {
+  background-color:#F0F0F0;
+  position:relative;
+  height: 50vh;
+  overflow-x:hidden;
+  word-wrap: break-word;
+  overflow-y:auto;
+  font-family: Arial, sans-serif;
+}
+#send2 {
+  position:relative;
 }
