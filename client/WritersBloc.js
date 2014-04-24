@@ -50,7 +50,6 @@
 				gameState = gameStateCursor.GameState;
 				Session.set("gameState", gameState);
 			} catch (err) {
-        //console.log("No gameState!");
       }
 
 		  /* pull currentRound from Games collection */
@@ -59,7 +58,21 @@
       	currentRound = currentRoundCursor.CurrentRound;
         Session.set("currentRound", currentRound);
       } catch (err) {
-        //console.log("No currentRound!");
+      }
+
+      /* pull number of players from Players collection */
+      try {
+        var numPlayersCursor = Games.findOne(gameID, {$fields: {PlayerCount: 1}});
+        var numPlayers = numPlayersCursor.PlayerCount;
+        Session.set("numberOfPlayers", numPlayers);
+      } catch (err) {
+      }
+
+      /* pull number of players from Players collection */
+      try {
+        var readyPlayers = Players.find({GameID: gameID, CanPlay: false}).fetch().length;
+        Session.set("numberOfReadyPlayers", readyPlayers);
+      } catch (err) {
       }
     }
 

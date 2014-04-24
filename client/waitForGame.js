@@ -28,6 +28,7 @@ Template.waitForGame.helpers({
 Template.waitForGame.events({
   'click #start': function(event) {
     var gameID = Session.get("gameID");
+    Meteor.call("fillGame", gameID);
     Meteor.call("incrementRound", gameID);
     Meteor.call("setGroupGameState", gameID, SHOW_STAGE_ONE);
   },

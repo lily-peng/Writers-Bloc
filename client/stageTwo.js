@@ -11,7 +11,9 @@ stageTwoSubmit = function() {
       sentenceID = currentRadio.value;
     }
   }
-  Meteor.call("stageTwoSubmit", gameID, playerID, sentenceID, currentRound);  
+  var numPlayers = Session.get("numberOfPlayers"); 
+  var readyPlayers = Session.get("numberOfReadyPlayers");
+  Meteor.call("stageTwoSubmit", gameID, playerID, sentenceID, currentRound, numPlayers, readyPlayers); 
 }
 
 Template.stageTwo.showStageTwo = function() {

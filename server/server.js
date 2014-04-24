@@ -38,6 +38,12 @@ Meteor.methods({
   setGameID: function(playerID, gameID) {
     Players.update(playerID, {$set: {GameID: gameID}});
   },
+
+  fillGame: function(gameID) {
+    /* Close off the game so others cannot join */
+    var currentPlayers = Games.findOne(gameID).PlayerCount;
+    Games.update(gameID, {$set: {PlayersPerGame: currentPlayers}}); 
+  },
   
   incrementNumberPlayers: function(gameID) {
     Games.update(gameID, {$inc: {PlayerCount: 1}});
@@ -88,8 +94,16 @@ Meteor.methods({
     Messages.insert({GameID: gameID, PlayerName: playerName, Text: text, Date: now});
   },
 
+  incrementScore: function(playerID, points) {
+    Players.update(playerID, {$inc: {Score: points}});
+  },
+
+  setPlayerVoted: function(playerID, voted) {
+    Players.update(playerID, {$set: {Voted: voted}});
+  },
+
   /* handles submissions */ 
-  stageOneSubmit: function(gameID, playerID, roundNumber, text) {
+  stageOneSubmit: function(gameID, playerID, roundNumber, text, numPlayers, numReadyPlayers) {
 
     /* Add the sentence to the collection if they participated */
     if (text != "") {
@@ -112,18 +126,8 @@ Meteor.methods({
    	  }
 		);
 
-    /* Get the number of players in game */
-    var numPlayers = Games.findOne(gameID, {$fields: {PlayerCount: 1}}).PlayerCount;
-    var numReadyPlayers = Players.find({GameID: gameID, CanPlay: false}).fetch().length;
-
-    /* Get the number of sentences from this round */
-    var numSentences = PlayerSentences.find({
-			GameID: gameID, 
-			RoundNumber: roundNumber
-		}).fetch().length;
-
     /* Enable all players and move onto voting stage if ready */
-    if (numPlayers == numReadyPlayers) {
+    if (numPlayers == numReadyPlayers + 1) {
 	    /* Set all players to gameState */
 	    for (var i=0; i<numPlayers; i++) {
 			  Players.update(
@@ -134,8 +138,7 @@ Meteor.methods({
     }
   },
 
-  /* handles votes */
-  stageTwoSubmit: function(gameID, playerID, sentenceID, roundNumber) {
+  stageTwoSubmit: function(gameID, playerID, sentenceID, roundNumber, numPlayers, numReadyPlayers) {
 
     /* Vote for a sentence */
     if (sentenceID != null) {
@@ -145,7 +148,7 @@ Meteor.methods({
 			);
        
       /* Reward player for participating */
-      Players.update(playerID, {Voted: true});
+      Players.update(playerID, {$set: {Voted: true}});
 	  }
 
     /* Disable the player until the next stage */
@@ -157,57 +160,30 @@ Meteor.methods({
    	  }
 		);
 
-    /* Get the number of players in game */
-    var numPlayers = Games.findOne(gameID, {$fields: {PlayerCount: 1}}).PlayerCount;
-    var numReadyPlayers = Players.find({GameID: gameID, CanPlay: false}).fetch().length;
-       
     /* See if everyone has voted */
-    if (numPlayers == numReadyPlayers) {
+    if (numPlayers == numReadyPlayers + 1) {	
+      /* Give players their points */
+      //TODO: implement ACTUAL scoring system (should this even be done here?)
+      var players = Players.find({GameID: gameID}).fetch();
+      for (var i=0; i<players.length; i++) {
+        var pid = players[i]._id;
+        var points = PlayerSentences.findOne({GameID: gameID, RoundNumber: roundNumber, PlayerID: pid}).Votes;
+        Players.update(pid, {$inc: {Score: points}});
+      }      
 
-      /* Find highest score */
-      var topScore = PlayerSentences.findOne({GameID: gameID, RoundNumber: roundNumber}, {sort: {Votes: -1}}).Votes;
-
-      /* How many with that score? */
-      var winners = PlayerSentences.find({Votes: topScore}).fetch();
-
-     //Players.update({GameID: gameID}
-
-      /* Award winner(s) */
-      /*
-      if (winners.length == 1) {
-		    var winnerID = PlayerSentences.findOne({GameID: gameID, RoundNumber: roundNumber}, {sort: {Votes: -1}}).PlayerID;
-		    Players.update(
-		      winnerID,
-		      {$inc: {Score: 3}}
-		    );
-      } else {
-        for (var i=0; i<winners.length; i++) {
-				  var winnerID = winners[i].PlayerID;
-				  Players.update(
-				    winnerID,
-				    {$inc: {Score: 2}}
-				  );
-        }
-      }
-      */
-      //TODO: +1 to all 2nd place
-
-      /* Add one sentence to the story */
-      var bestSentence = PlayerSentences.findOne({GameID: gameID, RoundNumber: roundNumber, PlayerID: winnerID}).Text;
-      Games.update(gameID, {$push: {Sentences: bestSentence}});
-
-	    /* Reward voters and all players to gameState */
+      /* Add a sentence to the story */
+      var bestSentence = PlayerSentences.findOne({GameID: gameID, RoundNumber: roundNumber}, {sort: {Votes: -1}});
+      console.log("Best sentence: " + bestSentence.Text);
+      Games.update(gameID, {$push: {Sentences: bestSentence.Text}});
+     
+      /* Set all players to gameState */
 	    for (var i=0; i<numPlayers; i++) {
-        Players.update(
-          {GameID: gameID, Voted: true},
-          {$inc: {Score: 1}, Voted: false}
-        );
 			  Players.update(
 					{GameID: gameID, GameState: {$ne: 9}}, 
 					{$set: {GameState: 9, CanPlay: true}}
 				);
-	    }      
-		}     
+	    }
+    }
   },
 
   stageThreeSubmit: function(gameID, playerID, currentRound) {
@@ -230,8 +206,6 @@ Meteor.methods({
 
       var rounds = Games.findOne(gameID, {Rounds: 1}).Rounds;
 			var nextStage;
-
-      console.log("Round " + currentRound + " of " + rounds);        
 
       /* See if game is over */
       if (currentRound == rounds) {

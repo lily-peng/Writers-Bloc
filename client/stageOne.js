@@ -4,7 +4,9 @@ stageOneSubmit = function() {
   var currentRound = Session.get("currentRound");
   var playerID = Session.get("playerID");
   var text = document.getElementById("sentence").value;
-  Meteor.call("stageOneSubmit", gameID, playerID, currentRound, text);
+  var numPlayers = Session.get("numberOfPlayers"); 
+  var readyPlayers = Session.get("numberOfReadyPlayers");
+  Meteor.call("stageOneSubmit", gameID, playerID, currentRound, text, numPlayers, readyPlayers);
 }
 
 Template.stageOne.showStageOne = function() {

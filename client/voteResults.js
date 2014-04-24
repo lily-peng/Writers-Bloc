@@ -6,9 +6,17 @@ Template.voteResults.helpers({
     return canPlay;
   },
 
-  sentences: function() {
-    var sentences = PlayerSentences.find({}, {sort: {Votes: -1}});
-    return sentences;
+  info: function() {
+    var results = new Array;
+    var players = Players.find({}, {sort: {Score: -1}}).fetch();
+    for (var i=0; i<players.length; i++) {
+      var sentence = PlayerSentences.findOne({PlayerID: players[i]._id});
+      var text = sentence.Text;
+      var votes = sentence.Votes;
+      var line = "<p>" + i + 1 + ". \"" + sentence + "\"" + players[i].Name + " (" + votes + ")</p>";
+      results[i] = line;
+    }
+    return results;
   }
 });
 
