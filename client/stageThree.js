@@ -9,8 +9,8 @@ stageThreeSubmit = function() {
 Template.stageThree.showStageThree = function() {
   var show = Session.get("gameState") == SHOW_STAGE_THREE;
   if (show) {
-    Session.set("time", 30);
-    Session.set("timerID", Meteor.setTimeout(stageThreeSubmit, 30000));
+    Session.set("time", 10);
+    Session.set("timerID", Meteor.setTimeout(stageThreeSubmit, 10000));
   }
   return show;
 }

@@ -162,20 +162,31 @@ Meteor.methods({
 
     /* See if everyone has voted */
     if (numPlayers == numReadyPlayers + 1) {	
+      /* See if the game is ending */
+      var rounds = Games.findOne(gameID).Rounds;      
+
       /* Give players their points */
       //TODO: implement ACTUAL scoring system (should this even be done here?)
       var players = Players.find({GameID: gameID}).fetch();
       for (var i=0; i<players.length; i++) {
         var pid = players[i]._id;
-        var points = PlayerSentences.findOne({GameID: gameID, RoundNumber: roundNumber, PlayerID: pid}).Votes;
-        Players.update(pid, {$inc: {Score: points}});
+        var points = PlayerSentences.findOne({GameID: gameID, RoundNumber: roundNumber, PlayerID: pid}).Votes + 1;
+        if (rounds == roundNumber) {
+          points = points * 2;
+        }
+		    if (players[i].Voted) {
+          Players.update(pid, {$inc: {Score: points}});
+        }
       }      
 
       /* Add a sentence to the story */
       var bestSentence = PlayerSentences.findOne({GameID: gameID, RoundNumber: roundNumber}, {sort: {Votes: -1}});
-      console.log("Best sentence: " + bestSentence.Text);
-      Games.update(gameID, {$push: {Sentences: bestSentence.Text}});
-     
+      if (rounds == roundNumber) {
+        Games.update(gameID, {$set: {Title: bestSentence.Text}});
+      } else {
+        Games.update(gameID, {$push: {Sentences: bestSentence.Text}});
+      }     
+
       /* Set all players to gameState */
 	    for (var i=0; i<numPlayers; i++) {
 			  Players.update(
@@ -192,7 +203,7 @@ Meteor.methods({
     Players.update(
 			playerID, {
 				$set: {
-		      CanPlay: false
+		      CanPlay: false,
 				}  	
    	  }
 		);  
