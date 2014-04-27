@@ -31,13 +31,5 @@ Template.waitForGame.events({
     Meteor.call("fillGame", gameID);
     Meteor.call("incrementRound", gameID);
     Meteor.call("setGroupGameState", gameID, SHOW_STAGE_ONE);
-  },
-
-  'click #leaveGame': function(event) {
-    var gameID = Session.get("gameID");
-    var playerID = Session.get("playerID");
-    var isHost = Players.findOne(playerID).Host;
-    Meteor.call("setPlayerGameState", playerID, SHOW_LOBBY); 
-    Meteor.call("decrementNumberPlayers", gameID, playerID, isHost);    
   }
 });
