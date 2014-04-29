@@ -1,6 +1,6 @@
 README: Final Delivery
 
-The root directory of the repo contains three files (WritersBloc.css, WritersBloc.html, WritersBloc.js) that form a standard Meteor project. There is no final executable or installable product, but rather source is deployed using Meteor, the final product being visible on the website that you have deployed to. We have already deployed the site to writersbloc.meteor.com, but if you wish to deploy yourself, follow these instructions.
+The root directory of the repo contains three files (WritersBloc.css, WritersBloc.html, WritersBloc.js) that form a standard Meteor project. There is no final executable or installable product, but rather source is deployed using Meteor, the final product being visible on the website that you have deployed to. We have already deployed the site to writers-bloc.meteor.com, but if you wish to deploy yourself, follow these instructions.
 
 
 NOTE: While you can view our site on any platform, you will need to be using Linux/Mac to deploy the site yourself. There exists a Windows port, but as of this writing it’s a bit buggy and you’d probably be better off using a VM.
