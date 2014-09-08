@@ -1,6 +1,6 @@
 README: Final Delivery
 
-Deployed here: http://lilypeng.com/writers-bloc
+Deployed here: http://writers-bloc.meteor.com/
 
 The root directory of the repo contains three files (WritersBloc.css, WritersBloc.html, WritersBloc.js) that form a standard Meteor project. There is no final executable or installable product, but rather source is deployed using Meteor, the final product being visible on the website that you have deployed to. We have already deployed the site to writers-bloc.meteor.com, but if you wish to deploy yourself, follow these instructions.
 
